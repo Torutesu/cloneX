@@ -131,3 +131,47 @@ MCPの`inputSchema`とAnthropic tool-use用JSON Schemaを両方導出)、
   defaultに復帰。全コンポーネントはCSS変数経由で色参照しているため全画面に適用される
 - Lighthouse (DoD項目): MVPスコープにLP(マーケティングページ)が存在しないため N/A。
   次ステージでLPを作る場合に計測すること
+
+## レスポンシブ対応 [USER-REQ](2026-07-17)
+
+00-prd.md「レスポンシブ要件」+ E2E-019(新P0)への対応。既存デスクトップ挙動(md=768px
+以上)は不変のまま、md未満のレイアウトを追加した。
+
+- **AppShell(`src/components/app/AppShell.tsx`)**: 共通の`NavLinks`(ナビ項目+
+  ログアウト)をデスクトップの`Sidebar`とモバイルの`MobileHeader`ドロワーの両方から
+  再利用。ドロワーは`open`state で条件付きマウント(閉時はDOMに存在しない)にして
+  あるため、`sidebar-nav-*` testidが同時に2つ存在してPlaywrightのstrict modeに
+  違反する事態を避けている(デスクトップ時は常にドロワーがunmountなので既存16件の
+  挙動に影響なし)。ハンバーガーは`mobile-menu-button`(44×44px)、バッジは
+  `mobile-review-badge`。
+- **テーブル→カード化(SCR-007/008/013)**: CSSの`hidden md:block`でテーブルとカードを
+  同時にマウントする方式だと、同じ`data-testid`(`contact-row-*`等)を持つ要素が
+  常時2つDOMに存在してしまう(操作の対象は片方だけでも、Playwrightのstrict-mode
+  ロケータやCIでの二重ヒットのリスクがある)。代わりに`src/lib/client/useIsMobile.ts`
+  (matchMediaベースのフック、Tailwindの`md`ブレークポイントと同じ767px境界)で
+  分岐し、テーブルかカードのどちらか一方だけを描画する方式にした。これらのページは
+  元々データ取得後にしか行/カードを描画しない(取得前はSkeleton)ため、この分岐に
+  よるSSR/ハイドレーション不整合は発生しない。
+- **パイプライン(SCR-005)**: 既存の`overflow-x-auto`列コンテナに`snap-x
+  snap-mandatory`(`md:snap-none`で解除)、各列に`w-[80vw] snap-center`
+  (`md:w-64`でデスクトップ幅に復帰)を追加。DnDはそのまま維持(モバイルでの必須要件
+  ではないため変更なし、ステージ変更はディール詳細のselectで代替可能という仕様通り)。
+- **チャット(SCR-004)/承認キュー(SCR-010)**: 吹き出し幅を`max-w-md`固定から
+  `max-w-[85%] md:max-w-md`に変更(390px幅で吹き出しがコンテナ幅を超えないように)。
+  入力欄・送信ボタン・承認/却下ボタンに44px以上のタップターゲット
+  (`min-h-11`/`max-md:min-h-11`)を追加。
+- **共通**: 各画面のルート要素の余白を`p-8`→`p-4 md:p-8`に、長い文字列(ディール名・
+  企業名・タスクタイトル・アクティビティ概要)には`truncate`+`min-w-0`を追加して
+  390px幅での水平スクロールを防止。デスクトップ側の見た目を変えないため、共有
+  `Button`/`sidebar-nav-*`自体の高さは`max-md:`接頭辞でモバイルのみ変更している
+  (デスクトップの`py-2`ベースの高さは無変更)。
+- **E2E-019(`e2e/e2e-019-mobile.spec.ts`)**: 承認対象のPENDING提案は、既存P0スイート
+  (同一シードDBを共有し先に実行される)が使い切っている可能性があるため、専用の
+  fixture`fixtures/emails/manual/09-mobile-review-task.json`(TASKタイプ、
+  confidence 0.75)を用意し、`page.request.post("/api/ingest/email", …)`で直接投入
+  している。TASKタイプの自動承認は他のどのP0テストも有効化しないため
+  (`auto-approve-toggle-NEW_DEAL`のみE2E-013が操作)、実行順序に関わらずPENDINGの
+  ままレビューキューに残ることを保証できる。水平スクロール検証は
+  `document.scrollingElement.scrollWidth <= 391`(390px+誤差1px)で実施。
+- 検証: `pnpm test:e2e`で17/17(既存16件+E2E-019)通過、`pnpm build`型エラー0、
+  `pnpm lint`エラー0を確認済み。既存16件のテストファイルは無変更。

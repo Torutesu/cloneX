@@ -121,7 +121,7 @@ export default function ReviewPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-8">
+    <div className="mx-auto max-w-4xl p-4 md:p-8">
       <h1 className="mb-4 text-xl font-bold text-text">承認キュー</h1>
 
       <div className="mb-4 flex flex-wrap gap-2">

@@ -201,7 +201,7 @@ export function ProposalCard({
 
       {isPending && variant === "queue" && (
         <div className="mt-1 flex gap-2">
-          <Button data-testid={`approve-${proposal.id}`} onClick={handleApprove} disabled={busy !== null} className="text-xs">
+          <Button data-testid={`approve-${proposal.id}`} onClick={handleApprove} disabled={busy !== null} className="max-md:min-h-11 max-md:min-w-11 text-xs">
             承認
           </Button>
           <Button
@@ -209,7 +209,7 @@ export function ProposalCard({
             variant="secondary"
             onClick={handleReject}
             disabled={busy !== null}
-            className="text-xs"
+            className="max-md:min-h-11 max-md:min-w-11 text-xs"
           >
             却下
           </Button>
@@ -233,7 +233,7 @@ export function ProposalCard({
 
       {isPending && variant === "preview" && (
         <div className="mt-1 flex gap-2">
-          <Button data-testid={`approve-${proposal.id}`} onClick={handleApprove} disabled={busy !== null} className="text-xs">
+          <Button data-testid={`approve-${proposal.id}`} onClick={handleApprove} disabled={busy !== null} className="max-md:min-h-11 max-md:min-w-11 text-xs">
             承認
           </Button>
           <Button
@@ -241,7 +241,7 @@ export function ProposalCard({
             variant="secondary"
             onClick={handleReject}
             disabled={busy !== null}
-            className="text-xs"
+            className="max-md:min-h-11 max-md:min-w-11 text-xs"
           >
             却下
           </Button>

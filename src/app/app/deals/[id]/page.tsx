@@ -63,7 +63,7 @@ function DealNameField({
           className="w-full rounded-token border border-border bg-surface px-2 py-1 text-xl font-bold text-text"
         />
       ) : (
-        <h1 className="text-xl font-bold text-text">{display}</h1>
+        <h1 className="truncate text-xl font-bold text-text">{display}</h1>
       )}
     </div>
   );
@@ -236,7 +236,7 @@ export default function DealDetailPage() {
   const { deal, contacts, activities, tasks, notes, pendingProposalCount, company } = data;
 
   return (
-    <div className="mx-auto max-w-4xl p-8">
+    <div className="mx-auto max-w-4xl p-4 md:p-8">
       {error && (
         <div className="mb-4">
           <ErrorBanner>{error}</ErrorBanner>
@@ -252,10 +252,10 @@ export default function DealDetailPage() {
         </div>
       )}
 
-      <div className="mb-6 flex items-start justify-between gap-6">
-        <div className="flex-1">
+      <div className="mb-6 flex flex-col items-start gap-4 md:flex-row md:justify-between md:gap-6">
+        <div className="min-w-0 w-full flex-1 md:w-auto">
           <DealNameField dealId={deal.id} initialName={deal.name} onSaved={reload} />
-          <div className="mt-2 flex items-center gap-3">
+          <div className="mt-2 flex flex-wrap items-center gap-3">
             <DealAmountField dealId={deal.id} initialAmount={deal.amount} currency={deal.currency} onSaved={reload} />
             <select
               data-testid="deal-stage-select"
@@ -272,7 +272,7 @@ export default function DealDetailPage() {
           </div>
         </div>
 
-        <Card className="w-56 shrink-0">
+        <Card className="w-full shrink-0 md:w-56">
           <p className="mb-2 text-xs font-semibold text-text-muted">関係者</p>
           <div className="flex flex-wrap gap-1">
             {contacts.map((c) => (

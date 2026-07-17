@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { User, Workspace } from "@prisma/client";
@@ -17,7 +18,8 @@ const NAV_ITEMS = [
   { key: "settings", href: "/app/settings", label: "Settings", icon: "⚙️" },
 ] as const;
 
-function Sidebar({ user }: { user: User }) {
+/** Nav item list + logout footer, shared by the desktop sidebar and the mobile drawer. */
+function NavLinks({ user, onNavigate }: { user: User; onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { count } = useReviewBadge();
@@ -28,8 +30,7 @@ function Sidebar({ user }: { user: User }) {
   }
 
   return (
-    <nav className="flex h-screen w-56 shrink-0 flex-col border-r border-border bg-surface">
-      <div className="px-4 py-5 text-lg font-bold text-text">cloneX</div>
+    <>
       <div className="flex-1 overflow-y-auto px-2">
         {NAV_ITEMS.map((item) => {
           const active = item.href === "/app" ? pathname === "/app" : pathname.startsWith(item.href);
@@ -38,7 +39,8 @@ function Sidebar({ user }: { user: User }) {
               key={item.key}
               href={item.href}
               data-testid={`sidebar-nav-${item.key}`}
-              className={`mb-1 flex items-center justify-between rounded-token px-3 py-2 text-sm transition-colors ${
+              onClick={onNavigate}
+              className={`mb-1 flex max-md:min-h-11 items-center justify-between rounded-token px-3 py-2 text-sm transition-colors ${
                 active ? "bg-primary text-primary-foreground" : "text-text hover:bg-surface-hover"
               }`}
             >
@@ -70,7 +72,75 @@ function Sidebar({ user }: { user: User }) {
           ログアウト
         </button>
       </div>
+    </>
+  );
+}
+
+/** md and up: fixed-width sidebar, unchanged from the pre-responsive layout. */
+function Sidebar({ user }: { user: User }) {
+  return (
+    <nav className="hidden h-screen w-56 shrink-0 flex-col border-r border-border bg-surface md:flex">
+      <div className="px-4 py-5 text-lg font-bold text-text">cloneX</div>
+      <NavLinks user={user} />
     </nav>
+  );
+}
+
+/** Below md: fixed top header (logo + hamburger) and an overlay drawer reusing NavLinks. */
+function MobileHeader({ user }: { user: User }) {
+  const [open, setOpen] = useState(false);
+  const { count } = useReviewBadge();
+
+  return (
+    <>
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface px-4 md:hidden">
+        <span className="text-lg font-bold text-text">cloneX</span>
+        <button
+          type="button"
+          data-testid="mobile-menu-button"
+          aria-label="メニューを開く"
+          onClick={() => setOpen(true)}
+          className="relative flex h-11 w-11 items-center justify-center rounded-token text-text hover:bg-surface-hover"
+        >
+          <span aria-hidden="true" className="text-2xl leading-none">
+            ☰
+          </span>
+          {count > 0 && (
+            <span
+              data-testid="mobile-review-badge"
+              className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white"
+            >
+              {count}
+            </span>
+          )}
+        </button>
+      </header>
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex md:hidden" data-testid="mobile-drawer">
+          <button
+            type="button"
+            aria-label="メニューを閉じる"
+            onClick={() => setOpen(false)}
+            className="absolute inset-0 bg-black/40"
+          />
+          <nav className="relative flex h-full w-72 max-w-[80%] flex-col border-r border-border bg-surface shadow-xl">
+            <div className="flex items-center justify-between px-4 py-5">
+              <span className="text-lg font-bold text-text">cloneX</span>
+              <button
+                type="button"
+                aria-label="閉じる"
+                onClick={() => setOpen(false)}
+                className="flex h-11 w-11 items-center justify-center text-text-muted hover:text-text"
+              >
+                ✕
+              </button>
+            </div>
+            <NavLinks user={user} onNavigate={() => setOpen(false)} />
+          </nav>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -88,9 +158,10 @@ export function AppShell({
   void workspace;
   return (
     <ReviewBadgeProvider initialCount={initialReviewCount}>
-      <div className="flex min-h-screen bg-bg">
+      <div className="flex min-h-screen flex-col bg-bg md:flex-row">
         <Sidebar user={user} />
-        <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+        <MobileHeader user={user} />
+        <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">{children}</main>
       </div>
     </ReviewBadgeProvider>
   );

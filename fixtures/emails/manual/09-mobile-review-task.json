@@ -1,0 +1,18 @@
+{
+  "id": "manual-09-mobile-review-task",
+  "fromEmail": "sato@mobiletest.example",
+  "fromName": "佐藤次郎",
+  "subject": "モバイル動線確認のお願い",
+  "bodyText": "佐藤です。次回のミーティングまでにモバイル動線の最終確認をお願いします。特にレビュー画面の承認操作を確認してください。",
+  "sentAt": "2026-07-17T01:00:00.000Z",
+  "expectedProposals": [
+    {
+      "type": "TASK",
+      "confidence": 0.75,
+      "payload": {
+        "title": "モバイル動線の最終確認をする",
+        "reason": "次回のミーティングまでの確認依頼が本文に明記されているため、タスクとして検出しました。"
+      }
+    }
+  ]
+}

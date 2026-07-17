@@ -178,7 +178,7 @@ function AutoApproveSection() {
             const policy = policies.find((p) => p.proposalType === key);
             const threshold = policy && policy.threshold <= 1 ? policy.threshold : 0.9;
             return (
-              <div key={key} className="flex items-center gap-4 text-sm">
+              <div key={key} className="flex flex-wrap items-center gap-4 text-sm">
                 <label className="flex w-40 items-center gap-2">
                   <input
                     data-testid={`auto-approve-toggle-${key}`}
@@ -334,7 +334,7 @@ function CreateTokenModal({ onClose, onCreated }: { onClose: () => void; onCreat
 
 export default function SettingsPage() {
   return (
-    <div className="mx-auto max-w-3xl p-8">
+    <div className="mx-auto max-w-3xl p-4 md:p-8">
       <h1 className="mb-6 text-xl font-bold text-text">設定</h1>
       <div className="flex flex-col gap-6">
         <MailboxSection />

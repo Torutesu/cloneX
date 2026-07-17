@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { apiGet, apiPost, ApiClientError } from "@/lib/client/api";
 import { Button, EmptyState, ErrorBanner, Skeleton, TextInput } from "@/components/ui/primitives";
 import { Modal } from "@/components/ui/Modal";
+import { useIsMobile } from "@/lib/client/useIsMobile";
 import type { Company } from "@/lib/client/types";
 
 function AddCompanyModal({ onClose, onCreated }: { onClose: () => void; onCreated: (c: Company) => void }) {
@@ -62,6 +63,7 @@ export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const load = useCallback(() => {
     setError(null);
@@ -75,8 +77,8 @@ export default function CompaniesPage() {
   }, [load]);
 
   return (
-    <div className="mx-auto max-w-4xl p-8">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="mx-auto max-w-4xl p-4 md:p-8">
+      <div className="mb-4 flex items-center justify-between gap-2">
         <h1 className="text-xl font-bold text-text">企業</h1>
         <Button data-testid="add-company-button" onClick={() => setModalOpen(true)}>
           + 追加
@@ -104,7 +106,27 @@ export default function CompaniesPage() {
         />
       )}
 
-      {companies && companies.length > 0 && (
+      {companies && companies.length > 0 && (isMobile ? (
+        <div className="flex flex-col gap-2">
+          {companies.map((c) => (
+            <div
+              key={c.id}
+              data-testid={`company-row-${c.id}`}
+              className="cursor-pointer rounded-token border border-border bg-surface p-3 text-sm"
+              onClick={() => router.push(`/app/companies/${c.id}`)}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <Link href={`/app/companies/${c.id}`} className="min-w-0 truncate font-medium text-primary hover:underline">
+                  {c.name}
+                </Link>
+                <span className="shrink-0 text-xs text-text-muted">{c.dealCount ?? 0}件</span>
+              </div>
+              <p className="truncate text-xs text-text-muted">{c.domain ?? "-"}</p>
+              <p className="truncate text-xs text-text-muted">コンタクト {c.contactCount ?? 0}件</p>
+            </div>
+          ))}
+        </div>
+      ) : (
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-border text-text-muted">
@@ -134,7 +156,7 @@ export default function CompaniesPage() {
             ))}
           </tbody>
         </table>
-      )}
+      ))}
 
       {modalOpen && (
         <AddCompanyModal onClose={() => setModalOpen(false)} onCreated={(c) => setCompanies((prev) => (prev ? [c, ...prev] : [c]))} />

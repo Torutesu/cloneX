@@ -126,7 +126,7 @@ export default function DashboardPage() {
   const noProposalsAtAll = proposals !== null && proposals.length === 0;
 
   return (
-    <div className="mx-auto max-w-6xl p-8">
+    <div className="mx-auto max-w-6xl p-4 md:p-8">
       <h1 className="mb-6 text-xl font-bold text-text">ダッシュボード</h1>
 
       {noProposalsAtAll ? (
@@ -166,10 +166,10 @@ export default function DashboardPage() {
                   key={stage.id}
                   type="button"
                   onClick={() => router.push(`/app/pipeline#${stage.name}`)}
-                  className="flex items-center justify-between rounded-token px-2 py-1.5 text-sm hover:bg-surface-hover"
+                  className="flex items-center justify-between gap-2 rounded-token px-2 py-1.5 text-sm hover:bg-surface-hover"
                 >
-                  <span className="text-text">{stage.name}</span>
-                  <span className="text-text-muted">
+                  <span className="min-w-0 truncate text-text">{stage.name}</span>
+                  <span className="shrink-0 text-text-muted">
                     {deals.length}件 / {formatAmount(totalAmount)}
                   </span>
                 </button>
@@ -185,14 +185,14 @@ export default function DashboardPage() {
               {(tasks ?? []).length === 0 && <p className="text-sm text-text-muted">タスクはありません</p>}
               {(tasks ?? []).map((t) => (
                 <label key={t.id} className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" onChange={() => handleTaskCheck(t.id)} className="accent-primary" />
-                  <span className="flex-1 text-text">{t.title}</span>
+                  <input type="checkbox" onChange={() => handleTaskCheck(t.id)} className="shrink-0 accent-primary" />
+                  <span className="min-w-0 flex-1 truncate text-text">{t.title}</span>
                   {t.deal && (
-                    <Link href={`/app/deals/${t.deal.id}`} className="text-primary hover:underline">
+                    <Link href={`/app/deals/${t.deal.id}`} className="shrink-0 truncate text-primary hover:underline">
                       {t.deal.name}
                     </Link>
                   )}
-                  <span className={isOverdue(t.dueAt) ? "text-danger" : "text-text-muted"}>{formatDate(t.dueAt)}</span>
+                  <span className={`shrink-0 ${isOverdue(t.dueAt) ? "text-danger" : "text-text-muted"}`}>{formatDate(t.dueAt)}</span>
                 </label>
               ))}
             </Card>
@@ -207,8 +207,8 @@ export default function DashboardPage() {
             {(activities ?? []).length === 0 && <p className="text-sm text-text-muted">アクティビティはありません</p>}
             {(activities ?? []).map((a) => (
               <div key={a.id} className="flex items-center gap-2 text-sm text-text-muted">
-                <span>{formatDate(a.occurredAt)}</span>
-                <span className="text-text">{a.summary}</span>
+                <span className="shrink-0">{formatDate(a.occurredAt)}</span>
+                <span className="min-w-0 truncate text-text">{a.summary}</span>
               </div>
             ))}
           </Card>

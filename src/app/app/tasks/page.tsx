@@ -6,6 +6,7 @@ import { apiGet, apiPatch, apiPost } from "@/lib/client/api";
 import { useToast } from "@/components/ui/Toast";
 import { Button, EmptyState, ErrorBanner, Skeleton, TextInput } from "@/components/ui/primitives";
 import { Modal } from "@/components/ui/Modal";
+import { useIsMobile } from "@/lib/client/useIsMobile";
 import { formatDate, isOverdue } from "@/lib/client/format";
 import type { Deal, Task } from "@/lib/client/types";
 
@@ -82,6 +83,7 @@ export default function TasksPage() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [doneAnim, setDoneAnim] = useState<Set<string>>(new Set());
+  const isMobile = useIsMobile();
 
   const load = useCallback((f: FilterKey) => {
     setTasks(null);
@@ -119,8 +121,8 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-8">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="mx-auto max-w-3xl p-4 md:p-8">
+      <div className="mb-4 flex items-center justify-between gap-2">
         <h1 className="text-xl font-bold text-text">タスク</h1>
         <Button data-testid="add-task-button" onClick={() => setModalOpen(true)}>
           + タスク追加
@@ -156,10 +158,43 @@ export default function TasksPage() {
       {tasks && tasks.length === 0 && <EmptyState title="タスクはありません" />}
 
       {tasks && tasks.length > 0 && (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 md:gap-1">
           {tasks.map((t) => {
             const isDone = t.status === "DONE" || doneAnim.has(t.id);
-            return (
+            return isMobile ? (
+              <div
+                key={t.id}
+                data-testid={`task-row-${t.id}`}
+                className="flex flex-col gap-1 rounded-token border border-border bg-surface p-3 text-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    data-testid={`task-checkbox-${t.id}`}
+                    type="checkbox"
+                    checked={isDone}
+                    disabled={t.status === "DONE"}
+                    onChange={() => t.status === "OPEN" && handleCheck(t.id)}
+                    className="h-5 w-5 accent-primary"
+                  />
+                  <span className={isDone ? "min-w-0 flex-1 truncate text-text-muted line-through" : "min-w-0 flex-1 truncate text-text"}>
+                    {t.title}
+                  </span>
+                  <span className="shrink-0">{t.source === "AI" ? "🤖" : "👤"}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 pl-8 text-xs">
+                  {t.deal ? (
+                    <Link href={`/app/deals/${t.deal.id}`} className="min-w-0 truncate text-primary hover:underline">
+                      {t.deal.name}
+                    </Link>
+                  ) : (
+                    <span />
+                  )}
+                  <span className={`shrink-0 ${isOverdue(t.dueAt) && !isDone ? "text-danger" : "text-text-muted"}`}>
+                    {formatDate(t.dueAt)}
+                  </span>
+                </div>
+              </div>
+            ) : (
               <div
                 key={t.id}
                 data-testid={`task-row-${t.id}`}

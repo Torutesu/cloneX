@@ -168,7 +168,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col p-8">
+    <div className="flex h-screen flex-col p-4 md:p-8">
       <h1 className="mb-4 text-xl font-bold text-text">チャット</h1>
 
       <div data-testid="chat-message-list" ref={listRef} className="flex-1 overflow-y-auto rounded-token border border-border bg-surface p-4">
@@ -195,11 +195,14 @@ export default function ChatPage() {
         <div className="flex flex-col gap-3">
           {(messages ?? []).map((m, i) =>
             m.role === "USER" ? (
-              <div key={m.id} className="ml-auto max-w-md rounded-token bg-primary px-3 py-2 text-sm text-primary-foreground">
+              <div
+                key={m.id}
+                className="ml-auto max-w-[85%] rounded-token bg-primary px-3 py-2 text-sm break-words text-primary-foreground md:max-w-md"
+              >
                 {m.content}
               </div>
             ) : (
-              <div key={m.id} className="max-w-md">
+              <div key={m.id} className="max-w-[85%] md:max-w-md">
                 <AssistantBubble
                   message={m}
                   onRetry={() => {
@@ -210,13 +213,15 @@ export default function ChatPage() {
               </div>
             ),
           )}
-          {sending && <div className="max-w-md rounded-token bg-surface-hover px-3 py-2 text-sm text-text-muted">…</div>}
+          {sending && (
+            <div className="max-w-[85%] rounded-token bg-surface-hover px-3 py-2 text-sm text-text-muted md:max-w-md">…</div>
+          )}
         </div>
       </div>
 
       <div className="relative mt-4 flex gap-2">
         {showPalette && (
-          <div className="absolute bottom-full mb-1 w-64 rounded-token border border-border bg-surface p-1 shadow-lg">
+          <div className="absolute bottom-full mb-1 w-64 max-w-[calc(100vw-2rem)] rounded-token border border-border bg-surface p-1 shadow-lg">
             {COMMANDS.map((c) => (
               <button
                 key={c.cmd}
@@ -225,7 +230,7 @@ export default function ChatPage() {
                   setInput(c.template);
                   setShowPalette(false);
                 }}
-                className="block w-full rounded-token px-2 py-1 text-left text-sm hover:bg-surface-hover"
+                className="block min-h-11 w-full rounded-token px-2 py-1 text-left text-sm hover:bg-surface-hover"
               >
                 {c.cmd}
               </button>
@@ -243,8 +248,9 @@ export default function ChatPage() {
             }
           }}
           placeholder="質問や指示を入力 (/ でコマンド)"
+          className="min-h-11"
         />
-        <Button data-testid="chat-send-button" onClick={() => send(input)} disabled={sending}>
+        <Button data-testid="chat-send-button" onClick={() => send(input)} disabled={sending} className="min-h-11 min-w-11">
           送信
         </Button>
       </div>

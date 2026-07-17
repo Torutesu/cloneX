@@ -85,7 +85,7 @@ export default function CompanyDetailPage() {
   const { company, contacts, deals } = data;
 
   return (
-    <div className="mx-auto max-w-4xl p-8">
+    <div className="mx-auto max-w-4xl p-4 md:p-8">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card className="md:col-span-1">
           <h1 className="mb-4 text-lg font-bold text-text">{company.name}</h1>
