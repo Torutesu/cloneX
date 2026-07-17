@@ -57,7 +57,11 @@ pnpm test:e2e   # playwright test — resets the DB and starts its own dev serve
 **Cloudflareアカウント不要・無料**。スマホからそのまま開けます。
 
 ```bash
-# 1. アプリをローカル起動(要 PostgreSQL)
+# 0. PostgreSQLが無い場合はDockerで(DATABASE_URLは.env.exampleの既定値と一致)
+docker run -d --name clonex-pg -e POSTGRES_USER=clonex -e POSTGRES_PASSWORD=clonex \
+  -e POSTGRES_DB=clonex -p 5432:5432 postgres:16
+
+# 1. アプリをローカル起動
 pnpm install && pnpm db:setup && pnpm dev   # http://localhost:3000
 
 # 2. 別ターミナルで cloudflared を入れてトンネルを張る
