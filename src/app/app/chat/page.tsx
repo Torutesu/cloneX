@@ -177,6 +177,21 @@ export default function ChatPage() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages, sending]);
 
+  // The home hero routes here as /app/chat?q=… (Octolane's home composer feeds
+  // straight into AI Chat). Auto-send once after history loads, then strip the
+  // param so a reload doesn't re-send.
+  const autoSent = useRef(false);
+  useEffect(() => {
+    if (messages === null || autoSent.current) return;
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) {
+      autoSent.current = true;
+      window.history.replaceState(null, "", "/app/chat");
+      send(q);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
   async function send(content: string) {
     if (!content.trim() || sending) return;
     setSending(true);

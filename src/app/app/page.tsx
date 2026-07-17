@@ -7,9 +7,75 @@ import { apiGet, apiPatch, apiPost } from "@/lib/client/api";
 import { useToast } from "@/components/ui/Toast";
 import { useReviewBadge } from "@/components/app/ReviewBadgeContext";
 import { ProposalCard } from "@/components/proposals/ProposalCard";
-import { Button, Card, EmptyState, ErrorBanner, Skeleton } from "@/components/ui/primitives";
+import { Button, Card, EmptyState, ErrorBanner, Skeleton, TextInput } from "@/components/ui/primitives";
 import { formatAmount, formatDate, isOverdue } from "@/lib/client/format";
 import type { AiProposal, Activity, Board, Task } from "@/lib/client/types";
+
+/**
+ * Chat-first home hero, mirroring Octolane's real home screen ("Your move,
+ * Chandrika" + composer + suggestion chips — observed in the Quivly case-study
+ * photo of the logged-in app). Submitting routes into /app/chat which auto-sends
+ * the message. The two chat chips use the fixture-backed phrasings so the flow
+ * works end-to-end in AI_MODE=fixture; the tasks chip links straight to Tasks.
+ */
+function HomeHero({ name }: { name: string | null }) {
+  const router = useRouter();
+  const [text, setText] = useState("");
+
+  function ask(message: string) {
+    if (!message.trim()) return;
+    router.push(`/app/chat?q=${encodeURIComponent(message.trim())}`);
+  }
+
+  return (
+    <section className="mx-auto mb-10 mt-4 flex max-w-2xl flex-col items-center gap-4 md:mt-10">
+      <h1 className="text-center text-2xl font-bold tracking-tight text-text md:text-3xl">
+        {name ? `次の一手を、${name}さん` : "次の一手を"}
+      </h1>
+      <form
+        className="flex w-full gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          ask(text);
+        }}
+      >
+        <TextInput
+          data-testid="home-composer-input"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="ディールについて質問、フォローアップの作成、状況の確認…"
+          className="min-h-11 shadow-sm"
+        />
+        <Button type="submit" data-testid="home-composer-send" className="min-h-11 shrink-0">
+          送信
+        </Button>
+      </form>
+      <div className="flex flex-wrap justify-center gap-2">
+        <button
+          type="button"
+          onClick={() => router.push("/app/tasks")}
+          className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-text hover:bg-surface-hover"
+        >
+          今日は何をすべき?
+        </button>
+        <button
+          type="button"
+          onClick={() => ask("10日以上動いていないディールを見せて")}
+          className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-text hover:bg-surface-hover"
+        >
+          止まっているフォローアップは?
+        </button>
+        <button
+          type="button"
+          onClick={() => ask("田中太郎さんにフォローアップして")}
+          className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-text hover:bg-surface-hover"
+        >
+          フォローアップを作成
+        </button>
+      </div>
+    </section>
+  );
+}
 
 function SectionShell({
   loading,
@@ -41,6 +107,7 @@ export default function DashboardPage() {
   const toast = useToast();
   const { refresh: refreshBadge } = useReviewBadge();
 
+  const [userName, setUserName] = useState<string | null>(null);
   const [proposals, setProposals] = useState<AiProposal[] | null>(null);
   const [proposalsError, setProposalsError] = useState<string | null>(null);
 
@@ -92,6 +159,9 @@ export default function DashboardPage() {
     loadBoard();
     loadTasks();
     loadActivities();
+    apiGet<{ user: { name: string } }>("/api/me")
+      .then((res) => setUserName(res.user.name))
+      .catch(() => {});
   }, [loadProposals, loadBoard, loadTasks, loadActivities]);
 
   async function handleApprove(id: string) {
@@ -127,7 +197,7 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-8">
-      <h1 className="mb-6 text-xl font-bold text-text">ダッシュボード</h1>
+      <HomeHero name={userName} />
 
       {noProposalsAtAll ? (
         <div className="mb-8">

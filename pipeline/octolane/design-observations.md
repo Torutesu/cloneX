@@ -89,7 +89,37 @@ Still out of scope (reference only): stage entry/exit criteria + multi-pipeline;
 `/create`/`/email`/`/explain` backends; meeting recorder, visitor signal, real
 email send; pricing tiers (Pro $39–49, Business $79–99, Team).
 
-## 5. Access limitation (for the record)
+## 5. Real-app captures (second pass, same day)
+
+The first pass relied on docs copy. A second sweep recovered **actual product
+imagery** (the first crawl stripped `/_next/image?url=` query strings and lost
+every product screenshot; refetched with full URLs + third-party articles):
+
+- **8K product render** (Octolane's own asset via every.io's founder profile):
+  the Opportunities *table* view with per-cell AI activity — cells literally show
+  "Writing value… / AI running…" while a right-hand **AI step panel** streams
+  `Trigger fired → Inputs gathered → Prompt prepared` with evidence chips
+  (Quote #1234.pdf, an email thread, a web source). Sidebar: workspace switcher,
+  **"Find or create…" search with ⌘K**, Home (badge), grouped sections
+  (Workspace ▸ Sales ▸ Dashboards/Opportunities/Accounts/Contacts, Signals,
+  Forms, Reports, Campaigns, Workflows; Private ▸ Inbox).
+- **Photo of the real logged-in app** (Quivly case-study hero, octolane.com):
+  the home screen is a **chat-first hub** — centered "Your move, Chandrika",
+  a composer ("Ask about a deal, draft a follow-up, or recap a meeting…"),
+  suggestion chips ("What's on today?", "Any missed follow-ups?", "Catch me up"),
+  "Make Octolane smarter" cards (AI Memory / AI Actions), Upcoming meetings.
+- **Older marketing shot** (theaiway.net): settings screens (Profile, Email &
+  calendar, Data model, Pipelines, Integrations) and an "AI memory" review UI
+  with Accept all / Dismiss — the approvals mental model extended to memories.
+
+→ Applied from these: the dashboard became a "Your move, {name}" chat-first hero
+(composer routes into /app/chat?q=… and auto-sends; chips map to the
+fixture-backed flows), and the sidebar gained the workspace name row plus a real
+"Find or create…" ⌘K palette searching deals/contacts/companies with create
+shortcuts. Not yet done: AI cell-writing indicators in tables, the step/evidence
+panel styling for proposals, AI Memory.
+
+## 6. Access limitation (for the record)
 
 "Log into the app and screenshot every screen" could not be done end-to-end: the
 product requires Google OAuth and `app.octolane.com` is egress-blocked. The captured

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { User, Workspace } from "@prisma/client";
 import { ReviewBadgeProvider, useReviewBadge } from "@/components/app/ReviewBadgeContext";
+import { CommandPalette } from "@/components/app/CommandPalette";
 import { apiPost } from "@/lib/client/api";
 
 /**
@@ -177,11 +178,42 @@ function NavLinks({ user, onNavigate }: { user: User; onNavigate?: () => void })
   );
 }
 
+/**
+ * "Find or create…" trigger styled like Octolane's pinned sidebar search
+ * (observed in both real-app captures), with the ⌘K hint chip.
+ */
+function FindOrCreateButton({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      data-testid="find-or-create-button"
+      onClick={onOpen}
+      className="mx-2 mb-2 flex min-h-9 items-center gap-2 rounded-token border border-border bg-bg px-3 py-1.5 text-sm text-text-muted hover:bg-surface-hover"
+    >
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </svg>
+      <span className="flex-1 text-left">検索または作成…</span>
+      <kbd className="rounded border border-border bg-surface px-1 text-[10px] text-text-muted">⌘K</kbd>
+    </button>
+  );
+}
+
 /** md and up: fixed-width sidebar, unchanged from the pre-responsive layout. */
-function Sidebar({ user }: { user: User }) {
+function Sidebar({ user, workspace, onOpenPalette }: { user: User; workspace: Workspace; onOpenPalette: () => void }) {
   return (
     <nav className="hidden h-screen w-56 shrink-0 flex-col border-r border-border bg-surface md:flex">
-      <div className="px-4 py-5"><Wordmark /></div>
+      <div className="px-4 pb-2 pt-5">
+        <Wordmark />
+        <p className="mt-1.5 flex items-center gap-1 truncate text-xs text-text-muted">
+          {workspace.name}
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </p>
+      </div>
+      <FindOrCreateButton onOpen={onOpenPalette} />
       <NavLinks user={user} />
     </nav>
   );
@@ -256,16 +288,20 @@ export function AppShell({
   initialReviewCount: number;
   children: React.ReactNode;
 }) {
-  void workspace;
   const router = useRouter();
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
-  // Global ⌘/ (Ctrl+/) jumps to AI Chat from anywhere (docs: "Open AI Chat with
-  // Cmd+/"). On the chat page itself the composer's own handler takes focus.
+  // Global shortcuts: ⌘/ (Ctrl+/) jumps to AI Chat (docs: "Open AI Chat with
+  // Cmd+/"); ⌘K (Ctrl+K) opens the Find-or-create palette, matching the ⌘K
+  // hint on Octolane's own sidebar search field.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "/") {
         e.preventDefault();
         router.push("/app/chat");
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -275,8 +311,9 @@ export function AppShell({
   return (
     <ReviewBadgeProvider initialCount={initialReviewCount}>
       <div className="flex min-h-screen flex-col bg-bg md:flex-row">
-        <Sidebar user={user} />
+        <Sidebar user={user} workspace={workspace} onOpenPalette={() => setPaletteOpen(true)} />
         <MobileHeader user={user} />
+        {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
         <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">{children}</main>
       </div>
     </ReviewBadgeProvider>
