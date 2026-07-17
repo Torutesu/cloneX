@@ -1,6 +1,10 @@
 node_modules/
 .next/
 .env
+.dev.vars
+.open-next/
+.wrangler/
+src/generated/
 playwright-report/
 test-results/
 *.tsbuildinfo

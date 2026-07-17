@@ -1,0 +1,6 @@
+SESSION_SECRET="change-me-in-production-please"
+AI_MODE=fixture
+# Only needed when AI_MODE=live
+ANTHROPIC_API_KEY=
+AI_MODEL_MID=claude-sonnet-5
+AI_MODEL_HIGH=claude-fable-5

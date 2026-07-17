@@ -1,11 +1,12 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import { executeTool, toolDefs, toJsonSchema, type ToolName } from "@/lib/ai/tools";
 import { listContacts, getContactById } from "@/lib/services/contactService";
 import { listActivities } from "@/lib/services/activityService";
 import type { ChatDealRef, ChatDraft, ChatInput, ChatResult } from "@/lib/ai/types";
+// Statically imported (not read from disk at request time) — see
+// src/lib/ai/fixtureRegistry.ts for why (no `fs` under Cloudflare Workers).
+import chatPatternsFixture from "../../../fixtures/ai/chat-patterns.json";
 
 const ERROR_RESULT: ChatResult = {
   kind: "chat",
@@ -40,14 +41,8 @@ type ActionPattern = {
 type ErrorPattern = { input: string; intent: "error" };
 type ChatPattern = QueryPattern | ActionPattern | ErrorPattern;
 
-let patternCache: ChatPattern[] | null = null;
-
 function loadPatterns(): ChatPattern[] {
-  if (patternCache) return patternCache;
-  const file = path.join(process.cwd(), "fixtures", "ai", "chat-patterns.json");
-  const parsed = JSON.parse(readFileSync(file, "utf8")) as { patterns: ChatPattern[] };
-  patternCache = parsed.patterns;
-  return patternCache;
+  return (chatPatternsFixture as { patterns: ChatPattern[] }).patterns;
 }
 
 function fillTemplate(template: string, vars: Record<string, string | number>): string {

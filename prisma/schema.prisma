@@ -1,5 +1,31 @@
+// Local Node dev/E2E path: unchanged classic ("library") engine client,
+// imported as `@prisma/client` exactly like before the Workers migration.
 generator client {
   provider = "prisma-client-js"
+}
+
+// Cloudflare Workers path: a second, fully engine-less generated client (no
+// Rust/WASM query engine binary at all — pure JS query compilation, using a
+// .wasm query compiler instead), required because workerd can't load the
+// classic engine binary. Only used from src/lib/prisma.ts's
+// createWorkersPrismaClient() via @prisma/adapter-pg. Two generator blocks
+// off one schema so neither runtime's client shape changes.
+//
+// `output` deliberately points inside node_modules/ as a bare package name
+// (not src/generated/, and not a dot-prefixed node_modules folder): paired
+// with `serverExternalPackages` in next.config.ts, this makes Next's webpack
+// build leave every import of it as a literal runtime `require`/`import`
+// instead of bundling it — which is required so this package's own
+// `import('./query_compiler_bg.wasm')` reaches OpenNext's later esbuild pass
+// untouched, to be correctly resolved there against the `conditions:
+// ["workerd"]` it sets. Generating it under src/ (or without the
+// serverExternalPackages entry) instead made webpack itself try to bundle the
+// wasm import (via the asyncWebAssembly experiment) into an fs-loaded chunk,
+// which doesn't exist inside workerd (no real filesystem) — see build-notes.md.
+generator clientWorkers {
+  provider   = "prisma-client-js"
+  output     = "../node_modules/prisma-workers-client"
+  engineType = "client"
 }
 
 datasource db {

@@ -9,24 +9,31 @@
     "start": "next start",
     "lint": "eslint .",
     "db:setup": "prisma db push && prisma db seed",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@prisma/adapter-pg": "^6.19.3",
     "@prisma/client": "6.19.3",
     "bcryptjs": "2.4.3",
     "next": "15.5.20",
+    "pg": "^8.22.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "zod": "3.25.76"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",
+    "@opennextjs/cloudflare": "^1.20.1",
     "@playwright/test": "1.61.1",
     "@tailwindcss/postcss": "4.3.3",
     "@types/bcryptjs": "2.4.6",
     "@types/node": "22.10.5",
+    "@types/pg": "^8.20.0",
     "@types/react": "19.1.0",
     "@types/react-dom": "19.1.0",
     "dotenv": "^17.4.2",
@@ -36,6 +43,7 @@
     "prisma": "6.19.3",
     "tailwindcss": "4.3.3",
     "tsx": "4.19.2",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "wrangler": "^4.112.0"
   }
 }

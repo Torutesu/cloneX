@@ -51,6 +51,74 @@ pnpm test:e2e   # playwright test — resets the DB and starts its own dev serve
 
 注意: `AI_MODE=fixture` はfixtureメール6通+チャット定型2パターンのデモが動く。実AIで試すには `live` + APIキー。
 
+## Cloudflare Workers 本番デプロイ(OpenNext アダプタ)
+
+`@opennextjs/cloudflare` でビルドし、`wrangler` で Cloudflare Workers にデプロイする。
+Prisma は Workers 上では `@prisma/adapter-pg` + Hyperdrive 経由で動く(`src/lib/prisma.ts`
+がローカルNode/Workersを実行時に自動判定して分岐 — ローカル `pnpm dev`/`pnpm test:e2e` の
+挙動は無変更)。
+
+```bash
+pnpm install
+pnpm build          # 通常のNextビルド(型エラー0を確認)
+pnpm test:e2e        # ローカルパスが無傷であることの確認(17/17)
+```
+
+1. **DB**: [Neon](https://neon.tech) 等で本番用の空Postgresを作成し、接続文字列を控える。
+   ローカルから一度だけスキーマ適用+シード:
+
+   ```bash
+   DATABASE_URL="<本番の接続文字列>" pnpm db:setup
+   ```
+
+2. **Wrangler ログイン → Hyperdrive 作成**:
+
+   ```bash
+   npx wrangler login
+   npx wrangler hyperdrive create clonex-db --connection-string="<本番の接続文字列>"
+   ```
+
+   出力される `id` を `wrangler.jsonc` の `hyperdrive[0].id`
+   (プレースホルダ `REPLACE_WITH_WRANGLER_HYPERDRIVE_CREATE_ID`)に上書きする。
+   `wrangler.jsonc` の `name`(既定 `clonex`)も、自分のCloudflareアカウントで
+   空いている名前に変更する必要がある場合がある(workers.dev のサブドメインは
+   アカウント内でグローバルに一意)。
+
+3. **Secrets**(`wrangler secret put <NAME>` を対話的に実行、値を貼り付ける):
+
+   ```bash
+   npx wrangler secret put SESSION_SECRET
+   npx wrangler secret put AI_MODE            # fixture か live
+   npx wrangler secret put ANTHROPIC_API_KEY   # AI_MODE=live の場合のみ(空でも可)
+   ```
+
+4. **デプロイ**:
+
+   ```bash
+   pnpm cf:deploy
+   ```
+
+   表示される `https://<worker-name>.<subdomain>.workers.dev` を開き、
+   `demo@clonex.dev` / `demo1234` でログインして確認する。
+
+### ローカルでの動作確認(実デプロイ前)
+
+```bash
+pnpm cf:build     # OpenNextビルド(.open-next/ 生成)
+pnpm cf:preview   # OpenNextビルド + wrangler dev(ローカルworkerd、Hyperdriveは
+                  # wrangler.jsonc の localConnectionString 経由でローカルPGに接続)
+```
+
+`wrangler.jsonc` の `hyperdrive[0].localConnectionString` は既定で
+`.env`/`.env.example` と同じローカルPG接続文字列になっている。Secrets のローカル版は
+`.dev.vars`(`.dev.vars.example` をコピーして使う、`.env` 同様 gitignore 対象)。
+
+ハマりやすい点:
+- `wrangler.jsonc` の `name` が Cloudflare アカウント内で衝突していると `cf:deploy` が失敗する
+- Hyperdrive の `id` をプレースホルダのままデプロイすると起動時にエラーになる(`cf:preview`
+  はプレースホルダのままでも `localConnectionString` を使うので動く)
+- `AI_MODE=live` にした場合は `ANTHROPIC_API_KEY` の secret も必須
+
 ## Cloudflare で確認テスト用URLを出す(最速: Quick Tunnel)
 
 ローカルでアプリを起動し、Cloudflare Quick Tunnel で即席の公開URLを作る方法。
@@ -75,4 +143,4 @@ cloudflared tunnel --url http://localhost:3000
 注意:
 - Quick Tunnel はターミナルを閉じると消える一時URL(確認テスト用途向け)
 - 常設したい場合は Cloudflare Zero Trust の Named Tunnel か、
-  Workers への本番デプロイ(要 OpenNext アダプタ対応 — 未実施)を使う
+  上の「Cloudflare Workers 本番デプロイ」を使う

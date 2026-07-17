@@ -175,3 +175,105 @@ MCPの`inputSchema`とAnthropic tool-use用JSON Schemaを両方導出)、
   `document.scrollingElement.scrollWidth <= 391`(390px+誤差1px)で実施。
 - 検証: `pnpm test:e2e`で17/17(既存16件+E2E-019)通過、`pnpm build`型エラー0、
   `pnpm lint`エラー0を確認済み。既存16件のテストファイルは無変更。
+
+## Cloudflare Workers 移行 [USER-REQ](2026-07-17)
+
+`@opennextjs/cloudflare` + `wrangler` でのデプロイ可能化。ローカルNode開発体験
+(`pnpm dev`/`pnpm test:e2e`)は無変更のまま、`pnpm cf:build`/`pnpm cf:preview`
+(`wrangler dev`、ローカルworkerd + Hyperdriveのlocal connection string経由でローカルPGに
+接続)でのスモークまで確認済み。
+
+### Prisma: 2つのgeneratorブロックに分割(1スキーマから)
+
+`prisma/schema.prisma`に`generator client`(既定、ローカルNode用、無変更)に加えて
+`generator clientWorkers`(`engineType = "client"`、`output =
+"../node_modules/prisma-workers-client"`)を追加。理由:
+- Workers(workerd)はRustのクラシックエンジンバイナリを読み込めない。`engineType =
+  "client"`は完全にエンジンレス(WASM製クエリコンパイラのみ)な生成クライアントで、
+  `@prisma/adapter-pg` + Hyperdriveバインディングの接続文字列と組み合わせて使う。
+- ただし`engineType = "client"`はアダプタなしの`new PrismaClient()`を一切許可しない
+  (`Missing configured driver adapter`で例外)。ローカルNodeパスは「現状どおり標準
+  クライアント(エンジン)を使い続ける」という要件があるため、1つの生成クライアントで
+  両対応はできず、2つ目のgeneratorブロックで別クライアントを生成する構成にした。
+- `output`をあえて`src/generated/`ではなく`node_modules/`直下(バニラなパッケージ名
+  `prisma-workers-client`)にし、`next.config.ts`の`serverExternalPackages:
+  ["prisma-workers-client"]`とセットにしてある。このクライアントは内部で
+  `import('./query_compiler_bg.wasm')`を行うが、webpackにバンドルさせると
+  (`experiments.asyncWebAssembly`を有効にしても)Node向けのfs読み込みチャンクとして
+  出力されてしまい、workerdには実ファイルシステムが無いため`ENOENT`で失敗する。
+  `serverExternalPackages`でこのimportをwebpackから完全に除外し、OpenNextの後段の
+  esbuildパス(`conditions: ["workerd"]`)にそのまま解決させることで、正しくWASM経由
+  で読み込まれるようにした。`src/lib/prisma.ts`からは
+  `import { PrismaClient as WorkersPrismaClient } from "prisma-workers-client/wasm"`
+  (明示的な`/wasm`サブパス)で参照している。
+
+### `src/lib/prisma.ts`: 実行時ランタイム判定 + リクエストスコープの使い分け
+
+- `navigator.userAgent === "Cloudflare-Workers"`でworkerd実行かどうかを判定
+  (Cloudflare/OpenNextが案内する標準的な手法)。`next.config.ts`の
+  `initOpenNextCloudflareForDev()`により`next dev`でも`getCloudflareContext()`自体は
+  解決可能になるが、この判定はそれとは独立に「本当にworkerd上か」だけを見る。
+- ローカルNode: 既存のグローバルシングルトン(`global.__prisma`、開発時のホット
+  リロード対策)を無変更で維持。
+- Workers: `getCloudflareContext().ctx`(リクエストごとに異なる`ExecutionContext`)を
+  キーにした`WeakMap`でクライアントをキャッシュし、**リクエストをまたいでは絶対に
+  再利用しない**設計にした。理由は実機検証で発見した具体的な不具合: `wrangler dev`の
+  ローカルHyperdrive-over-Postgressエミュレーションで、同じ`@prisma/adapter-pg`
+  クライアント(=同じ`pg.Pool`接続)を2つ目以降のリクエストで再利用すると、その
+  リクエストが確実にハングする(`GET /api/companies`等が
+  "Workers runtime canceled this request because it detected that your Worker's
+  code had hung"で毎回タイムアウト)。プールサイズを`max: 5`→`max: 1`に変えても
+  症状は変わらず、「1接続を複数リクエストにまたいで使い回す」こと自体が原因と特定
+  (1リクエスト内の複数クエリ、例:`dealService.getBoard()`の`Promise.all`は問題なし)。
+  `ExecutionContext`単位でクライアントを都度生成・破棄する方式に変えたところ、
+  同一エンドポイントへの連続リクエストも含めて安定して動作するようになった。
+  `PrismaPg`には`max: 1`を指定(このクライアントは1リクエスト分の寿命しか持たない
+  ため、複数コネクションは不要。実際のプーリングはHyperdrive側が担う)。
+
+### fixtures の静的import化(`fs`依存の排除)
+
+`src/lib/ai/fixtureRegistry.ts`(`fixtures/emails/**/*.json`)と
+`src/lib/ai/chat.ts`(`fixtures/ai/chat-patterns.json`)は`node:fs`の
+`readFileSync`/`readdirSync` + `process.cwd()`でファイルを読んでいたが、workerdには
+実ファイルシステムが無い。各fixtureファイルをビルド時の静的`import`(JSONモジュール、
+`tsconfig.json`の`resolveJsonModule`は既に有効)に置き換えた。マッチング条件
+(`(fromEmail, subject, bodyText)`の完全一致)やマニュアル/メールボックスの分離ロジックは
+無変更 — 新しいfixtureファイルを追加する場合は`fixtureRegistry.ts`にimport文を1行
+足す必要がある(ディレクトリを実行時に走査しなくなったため)。
+
+### wrangler.jsonc / open-next.config.ts
+
+- `wrangler.jsonc`: `compatibility_flags: ["nodejs_compat"]`、`assets`
+  バインディング、`WORKER_SELF_REFERENCE`(ISR再検証用の自己参照serviceバインディング、
+  OpenNext標準)、`hyperdrive[0]`(`id`はプレースホルダ、`localConnectionString`は
+  ローカルPG接続文字列)。R2キャッシュ/imagesバインディングは未設定(ISR/`revalidate`
+  を使っていないため不要、`open-next.config.ts`も`defineCloudflareConfig()`の既定のまま)。
+- Secrets(`SESSION_SECRET`/`AI_MODE`/`ANTHROPIC_API_KEY`/`AI_MODEL_MID`/
+  `AI_MODEL_HIGH`)は`wrangler.jsonc`の`vars`ではなく`wrangler secret put`
+  (本番)/`.dev.vars`(ローカル、`.env`と同様gitignore対象、`.dev.vars.example`を
+  同梱)経由。
+
+### node:crypto (session.ts / tokenService.ts / mailboxService.ts)
+
+`createHmac`/`timingSafeEqual`/`createHash`/`randomBytes`はいずれも
+`nodejs_compat`フラグ下のworkerdで動作すること(スモークテストのログイン
+セッションCookie発行・検証、APIトークン照合)を確認済みのため、Web Crypto への
+置き換えは行わなかった。
+
+### 検証結果
+
+1. `pnpm build`: 型エラー0
+2. `pnpm test:e2e`: 17/17通過(ローカルNodeパスは無変更であることの確認)
+3. `pnpm cf:build`: 成功
+4. `pnpm cf:preview`相当(`wrangler dev`、`WRANGLER_SEND_METRICS=false`)でのcurlスモーク:
+   - `GET /login` → 200
+   - `POST /api/auth/login`(demo@clonex.dev/demo1234)→ 200、セッションCookie発行
+   - Cookie付き`GET /api/deals?view=board` → 200、シードのディールを返す
+   - Cookie付き`GET /api/contacts`/`GET /api/companies`(を含む複数エンドポイントへの
+     連続リクエスト)→ すべて200(前述のHyperdrive再利用ハング修正の確認)
+   - 新規ワークスペースで`POST /api/integrations/mailbox/sync` →
+     `{ingested:6, proposalsCreated:5, failed:0}`(fixtureの静的import化が本番相当の
+     workerd実行下でも機能している証明。既存デモワークスペースでは同じfixtureが
+     シード時に取り込み済みのため0件が正しい挙動)
+5. テスト用に起動したwrangler dev/workerdプロセスはすべて終了済み、`.open-next/`・
+   `.wrangler/`もクリーンアップ済み(いずれもgitignore対象)
