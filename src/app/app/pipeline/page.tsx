@@ -208,10 +208,22 @@ export default function PipelinePage() {
   }
 
   const totalDeals = board?.stages.reduce((sum, s) => sum + s.deals.length, 0) ?? null;
+  // オープン(勝敗未確定)ステージの加重額合計 = フォーキャスト。
+  const forecast =
+    board?.stages
+      .filter((s) => !s.stage.isWon && !s.stage.isLost)
+      .reduce((sum, s) => sum + s.weightedAmount, 0) ?? null;
 
   return (
     <div className="flex h-screen flex-col p-4 md:p-8">
-      <h1 className="mb-4 text-xl font-bold text-text">パイプライン</h1>
+      <div className="mb-4 flex items-baseline justify-between gap-4">
+        <h1 className="text-xl font-bold tracking-tight text-text">パイプライン</h1>
+        {forecast !== null && totalDeals !== 0 && (
+          <p className="text-xs text-text-muted" data-testid="pipeline-forecast">
+            加重予測 <span className="font-semibold text-text">{formatAmount(forecast)}</span>
+          </p>
+        )}
+      </div>
 
       {error && (
         <div className="mb-4">
@@ -243,7 +255,7 @@ export default function PipelinePage() {
 
       {board && totalDeals !== 0 && (
         <div className="flex flex-1 snap-x snap-mandatory gap-4 overflow-x-auto pb-4 md:snap-none">
-          {board.stages.map(({ stage, deals, totalAmount }) => (
+          {board.stages.map(({ stage, deals, totalAmount, weightedAmount }) => (
             <div
               key={stage.id}
               id={`stage-${stage.name}`}
@@ -256,9 +268,22 @@ export default function PipelinePage() {
               className="flex w-[80vw] shrink-0 snap-center flex-col rounded-token border border-border bg-surface-hover/40 p-2 md:w-64 md:snap-align-none"
             >
               <div className="mb-2 px-1">
-                <p className="text-sm font-semibold text-text">{stage.name}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-text">{stage.name}</p>
+                  {!stage.isLost && (
+                    <span
+                      data-testid={`stage-probability-${stage.name}`}
+                      className="shrink-0 rounded-full bg-surface px-1.5 py-0.5 text-[10px] font-medium text-text-muted ring-1 ring-border"
+                    >
+                      {stage.probability}%
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-text-muted">
                   {deals.length}件 / {formatAmount(totalAmount)}
+                  {weightedAmount > 0 && weightedAmount !== totalAmount && (
+                    <span className="text-text-muted/70"> · 加重 {formatAmount(weightedAmount)}</span>
+                  )}
                 </p>
               </div>
               <div className="flex flex-1 flex-col gap-2 overflow-y-auto">

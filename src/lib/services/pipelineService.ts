@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
 
 export const DEFAULT_STAGES = [
-  { name: "Lead", order: 1, isWon: false, isLost: false },
-  { name: "Qualified", order: 2, isWon: false, isLost: false },
-  { name: "Proposal", order: 3, isWon: false, isLost: false },
-  { name: "Negotiation", order: 4, isWon: false, isLost: false },
-  { name: "Won", order: 5, isWon: true, isLost: false },
-  { name: "Lost", order: 6, isWon: false, isLost: true },
+  { name: "Lead", order: 1, probability: 10, isWon: false, isLost: false },
+  { name: "Qualified", order: 2, probability: 30, isWon: false, isLost: false },
+  { name: "Proposal", order: 3, probability: 50, isWon: false, isLost: false },
+  { name: "Negotiation", order: 4, probability: 70, isWon: false, isLost: false },
+  { name: "Won", order: 5, probability: 100, isWon: true, isLost: false },
+  { name: "Lost", order: 6, probability: 0, isWon: false, isLost: true },
 ] as const;
 
 export async function getDefaultPipeline(workspaceId: string) {

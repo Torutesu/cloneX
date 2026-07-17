@@ -27,11 +27,19 @@ type ChatToolCallsPayload = {
 };
 
 const SAMPLE_PROMPTS = ["動いていないディールは?", "今週のタスクは?", "田中太郎さんにフォローアップして"];
-const COMMANDS = [
-  { cmd: "/deals", template: "/deals " },
-  { cmd: "/contacts", template: "/contacts " },
-  { cmd: "/tasks", template: "/tasks " },
-  { cmd: "/followup", template: "/followup (名前)にフォローアップして" },
+
+// Octolane's composer opens a slash menu (docs: /ai/chat-slash-commands) that
+// inserts an intent; the agent then executes it. Here each command drops a
+// natural-language template into the composer that runs through the same chat
+// endpoint. `/find` and `/followup` map onto the fixture-backed flows so they
+// work end-to-end in AI_MODE=fixture; the rest are executed for real in live mode.
+type Command = { cmd: string; label: string; template: string };
+const COMMANDS: Command[] = [
+  { cmd: "/find", label: "ディールやコンタクトを検索", template: "10日以上動いていないディールを見せて" },
+  { cmd: "/followup", label: "フォローアップ草稿を作成", template: "田中太郎さんにフォローアップして" },
+  { cmd: "/forecast", label: "パイプラインの加重予測", template: "パイプラインの加重予測を教えて" },
+  { cmd: "/report", label: "サマリーレポートを生成", template: "今週のパイプラインの動きをまとめて" },
+  { cmd: "/tasks", label: "タスクを確認", template: "今週のタスクは?" },
 ];
 
 function DealRefCard({ ref }: { ref: NonNullable<ChatToolCallsPayload["dealRefs"]>[number] }) {
@@ -137,10 +145,32 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
+  const [paletteIndex, setPaletteIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Commands filtered by whatever the user has typed after the leading "/".
+  const filteredCommands =
+    showPalette && input.startsWith("/")
+      ? COMMANDS.filter((c) => c.cmd.startsWith(input.trim().toLowerCase()))
+      : [];
 
   useEffect(() => {
     apiGet<{ messages: ChatMessage[] }>("/api/chat/messages").then((res) => setMessages(res.messages));
+  }, []);
+
+  // Cmd+/ opens the composer (docs: "Open AI Chat with Cmd+/"). Focus is enough
+  // here since chat is a dedicated page; AppShell handles the cross-page jump.
+  useEffect(() => {
+    inputRef.current?.focus();
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "/") {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   useEffect(() => {
@@ -164,7 +194,14 @@ export default function ChatPage() {
 
   function handleInputChange(value: string) {
     setInput(value);
-    setShowPalette(value.startsWith("/") && value.length <= 12);
+    setShowPalette(value.startsWith("/"));
+    setPaletteIndex(0);
+  }
+
+  function pickCommand(c: Command) {
+    setInput(c.template);
+    setShowPalette(false);
+    inputRef.current?.focus();
   }
 
   return (
@@ -220,34 +257,62 @@ export default function ChatPage() {
       </div>
 
       <div className="relative mt-4 flex gap-2">
-        {showPalette && (
-          <div className="absolute bottom-full mb-1 w-64 max-w-[calc(100vw-2rem)] rounded-token border border-border bg-surface p-1 shadow-lg">
-            {COMMANDS.map((c) => (
+        {showPalette && filteredCommands.length > 0 && (
+          <div
+            data-testid="command-palette"
+            className="absolute bottom-full mb-1 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-token border border-border bg-surface p-1 shadow-lg"
+          >
+            <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-text-muted">コマンド</p>
+            {filteredCommands.map((c, i) => (
               <button
                 key={c.cmd}
                 type="button"
-                onClick={() => {
-                  setInput(c.template);
-                  setShowPalette(false);
-                }}
-                className="block min-h-11 w-full rounded-token px-2 py-1 text-left text-sm hover:bg-surface-hover"
+                data-testid={`command-${c.cmd.slice(1)}`}
+                onMouseEnter={() => setPaletteIndex(i)}
+                onClick={() => pickCommand(c)}
+                className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-token px-2 py-1.5 text-left ${
+                  i === paletteIndex ? "bg-surface-hover" : ""
+                }`}
               >
-                {c.cmd}
+                <span className="font-mono text-sm text-primary">{c.cmd}</span>
+                <span className="min-w-0 flex-1 truncate text-xs text-text-muted">{c.label}</span>
               </button>
             ))}
           </div>
         )}
         <TextInput
+          ref={inputRef}
           data-testid="chat-input"
           value={input}
           onChange={(e) => handleInputChange(e.target.value)}
           onKeyDown={(e) => {
+            if (showPalette && filteredCommands.length > 0) {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setPaletteIndex((n) => (n + 1) % filteredCommands.length);
+                return;
+              }
+              if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setPaletteIndex((n) => (n - 1 + filteredCommands.length) % filteredCommands.length);
+                return;
+              }
+              if (e.key === "Escape") {
+                setShowPalette(false);
+                return;
+              }
+              if (e.key === "Enter" || e.key === "Tab") {
+                e.preventDefault();
+                pickCommand(filteredCommands[paletteIndex]!);
+                return;
+              }
+            }
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               send(input);
             }
           }}
-          placeholder="質問や指示を入力 (/ でコマンド)"
+          placeholder="質問や指示を入力 (/ でコマンド、⌘/ で入力へ)"
           className="min-h-11"
         />
         <Button data-testid="chat-send-button" onClick={() => send(input)} disabled={sending} className="min-h-11 min-w-11">

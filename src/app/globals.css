@@ -22,6 +22,18 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
+  /* Grotesk-register defaults matching Octolane's type: contextual alternates on,
+     tabular numerals so amounts/percentages align in the kanban + tables. */
+  font-feature-settings: "cv11", "ss01", "tnum";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display tier: tighter tracking on headings (Octolane's font-display register). */
+h1,
+h2,
+h3 {
+  letter-spacing: -0.014em;
 }
 
 * {

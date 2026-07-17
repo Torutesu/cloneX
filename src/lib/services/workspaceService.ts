@@ -15,6 +15,7 @@ export async function createWorkspaceForUser(userId: string, name: string) {
         pipelineId: pipeline.id,
         name: s.name,
         order: s.order,
+        probability: s.probability,
         isWon: s.isWon,
         isLost: s.isLost,
       })),

@@ -37,7 +37,7 @@ async function main() {
   const stages = await Promise.all(
     DEFAULT_STAGES.map((s) =>
       prisma.stage.create({
-        data: { pipelineId: pipeline.id, name: s.name, order: s.order, isWon: s.isWon, isLost: s.isLost },
+        data: { pipelineId: pipeline.id, name: s.name, order: s.order, probability: s.probability, isWon: s.isWon, isLost: s.isLost },
       }),
     ),
   );

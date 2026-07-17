@@ -65,20 +65,29 @@ recommended follow-up but was left out to avoid a build-time font fetch).
 - **Pipeline stages** have a name, color, probability, entry (auto-advance) and exit
   criteria. cloneX has name/stage only — probability + entry/exit criteria are a gap.
 
-## 4. Notable gaps vs. the real product (candidate follow-ups, not yet done)
+## 4. Fidelity gaps vs. the real product — now implemented
 
-Prioritized; none are in the current MVP scope (`00-prd.md`) but each is a
-faithful-reproduction lever:
+Each was a faithful-reproduction lever grounded in §1–3; all four shipped in this
+pass (verified: 17/17 E2E green, 0 type errors):
 
-1. **Chat slash commands + `Cmd+/`** (`/docs/ai/chat-slash-commands`): `/find`,
-   `/create`, `/report`, `/email`, `/forecast`, `/explain`. cloneX chat is free-text
-   only. High value, medium effort (fits the existing tool-wrapper layer).
-2. **Stage probability** on pipeline stages + a weighted pipeline value. Low effort.
-3. **Typography scale**: adopt a display/text two-tier scale + a grotesk webfont.
-4. **Warm-neutral surface polish**: subtle sidebar selection (Octolane uses a quiet
-   gray selection, not a solid accent pill), line icons instead of emoji.
-5. **Pricing** (reference only, out of scope): Pro $39–49/seat, Business $79–99/seat,
-   Team (custom); "Save 20% yearly"; AI-credit allotments per tier.
+1. **Chat slash commands + `Cmd+/`** (`/docs/ai/chat-slash-commands`): the composer
+   now has an Octolane-style slash menu (`/find`, `/followup`, `/forecast`,
+   `/report`, `/tasks`) with descriptions and arrow/enter/esc keyboard nav, and
+   `⌘/` (Ctrl+/) jumps to AI Chat from any screen (AppShell) and focuses the
+   composer. `/find` and `/followup` insert the fixture-backed phrases so they run
+   end-to-end in `AI_MODE=fixture`; all commands execute for real in live mode.
+2. **Stage probability + weighted pipeline value**: `Stage.probability` (0–100)
+   added to the schema/seed (Lead 10 → Won 100); the board exposes a per-stage
+   `weightedAmount` and the pipeline header shows a weighted forecast total.
+3. **Typography**: self-hosted Inter (variable, latin, OFL) via `next/font/local`
+   drives latin text; Japanese falls through to the system stack. Headings get
+   display-register tracking; body enables tabular numerals so amounts align.
+4. **Quiet sidebar**: emoji replaced with line icons, the solid accent pill became
+   a quiet gray selection with a blue left-accent bar, plus a small brand mark.
+
+Still out of scope (reference only): stage entry/exit criteria + multi-pipeline;
+`/create`/`/email`/`/explain` backends; meeting recorder, visitor signal, real
+email send; pricing tiers (Pro $39–49, Business $79–99, Team).
 
 ## 5. Access limitation (for the record)
 

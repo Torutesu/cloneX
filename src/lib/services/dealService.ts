@@ -20,10 +20,13 @@ export async function getBoard(workspaceId: string) {
         orderBy: { updatedAt: "desc" },
       });
       const totalAmount = deals.reduce((sum, d) => sum + (d.amount ?? 0), 0);
+      // 加重額 = ステージ勝率で割り引いた期待値。フォーキャストのベース。
+      const weightedAmount = Math.round((totalAmount * stage.probability) / 100);
       return {
         stage,
         deals: deals.map((d) => ({ ...d, stuck: isStuck(d.updatedAt) })),
         totalAmount,
+        weightedAmount,
       };
     }),
   );

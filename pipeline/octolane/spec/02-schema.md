@@ -77,14 +77,15 @@ model Pipeline {
 }
 
 model Stage {
-  id         String  @id @default(cuid())
-  pipelineId String
-  name       String
-  order      Int
-  isWon      Boolean @default(false)
-  isLost     Boolean @default(false)
-  pipeline   Pipeline @relation(fields: [pipelineId], references: [id])
-  deals      Deal[]
+  id          String  @id @default(cuid())
+  pipelineId  String
+  name        String
+  order       Int
+  probability Int     @default(0)  // 勝率0-100。加重パイプライン額の算出に使う(docs: pipelines-stages)
+  isWon       Boolean @default(false)
+  isLost      Boolean @default(false)
+  pipeline    Pipeline @relation(fields: [pipelineId], references: [id])
+  deals       Deal[]
   @@unique([pipelineId, order])
 }
 

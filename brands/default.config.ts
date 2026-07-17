@@ -53,7 +53,9 @@ const defaultBrand: BrandConfig = {
     info: "#5b5bd6", // status-feature-9 (distinct usable accent)
   },
   radius: "0.625rem",
-  font: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+  // `--font-inter` is provided by next/font/local (src/app/layout.tsx); latin text
+  // renders in Inter, Japanese falls through to the system stack.
+  font: "var(--font-inter), system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
 };
 
 export default defaultBrand;

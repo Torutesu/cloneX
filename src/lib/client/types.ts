@@ -7,6 +7,7 @@ export type Stage = {
   pipelineId: string;
   name: string;
   order: number;
+  probability: number;
   isWon: boolean;
   isLost: boolean;
 };
@@ -55,7 +56,7 @@ export type Deal = {
   stuck?: boolean;
 };
 
-export type BoardStage = { stage: Stage; deals: Deal[]; totalAmount: number };
+export type BoardStage = { stage: Stage; deals: Deal[]; totalAmount: number; weightedAmount: number };
 export type Board = { stages: BoardStage[] };
 
 export type Activity = {
