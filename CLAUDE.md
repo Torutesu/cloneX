@@ -69,9 +69,15 @@ shown once by the seed script and here): `clonex-dev-token`.
     use a `$dealByName:<Deal.name>` sentinel string wherever a real id is needed;
     `src/lib/ai/sentinels.ts` resolves it against the live DB right after a fixture
     match. Live mode never produces sentinels — this is fixture-mode-only plumbing.
-  - AIF-002/003 (chat) are **stubbed** in this build phase: `completeChatFixture()`
-    always returns the fixed fallback ("応答を生成できませんでした"). Phase 3 replaces
-    it with real pattern matching against `fixtures/ai/chat-patterns.json`.
+  - AIF-002/003 (chat, `src/lib/ai/chat.ts` `runChatFixture()`): the user's message is
+    matched exactly (after trimming) against `fixtures/ai/chat-patterns.json` to pick a
+    deterministic *response template* — but the underlying tool call always runs for
+    real (`deals_search` for AIF-002 query patterns, contact resolution via
+    `contactService` for AIF-003 action patterns), via `src/lib/ai/tools.ts`'s
+    workspace-scoped wrappers, the same wrappers `/api/mcp` exposes. Only the AI's
+    generated text/subject/body is fixture-templated; unmatched input (incl. the
+    reserved `__FORCE_ERROR__` sentinel used by E2E-018) returns the fixed fallback
+    ("応答を生成できませんでした").
 - **Amount is stored as whole currency units, not minor units** — see
   `pipeline/octolane/build-notes.md` for why this deviates from the schema's own
   comment.
@@ -100,8 +106,11 @@ these are the ids the E2E suite in `e2e/` already assumes; implement screens to 
 
 ## Build phases (this repo tracks clone-factory Stage 3)
 
-Phase 0-1 (current): scaffold, schema+seed, auth+API, AI fixture plumbing, E2E P0
-tests written against the data-testid contract above. **No screens exist yet** — every
-E2E test that reaches a UI step is expected to fail (missing testid), not a config/
-harness error. Phase 2 builds the screens against this same contract; Phase 3 wires up
-live AI; Phase 4 is the fix-until-green loop.
+Phase 0-1: scaffold, schema+seed, auth+API, AI fixture plumbing, E2E P0 tests written
+against the data-testid contract above. Phase 2: screens built against that contract.
+Phase 3 (current): AIF-002/003 real chat (fixture pattern matching + tool-use loop,
+`src/lib/ai/chat.ts`), `AI_MODE=live` Anthropic SDK wiring (`src/lib/ai/client.ts`,
+`src/lib/ai/chat.ts`), and the `/api/mcp` Streamable HTTP MCP server
+(`src/app/api/mcp/route.ts`) sharing `src/lib/ai/tools.ts`'s workspace-scoped tool
+wrappers with the chat loop. All 16 P0 E2E cases pass. Phase 4 (fix-until-green) was a
+no-op — no P0 failures remained entering Phase 3.

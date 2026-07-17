@@ -147,16 +147,19 @@ export async function updateDeal(
   });
 }
 
-/** Search used by AIF-002 chat and the (stubbed) MCP `deals_search` tool. */
+/** Search used by AIF-002 chat and the MCP `deals_search` tool (src/lib/ai/tools.ts). */
 export async function searchDeals(
   workspaceId: string,
-  opts: { query?: string; stuckOnly?: boolean } = {},
+  opts: { query?: string; stageName?: string; stuckOnly?: boolean } = {},
 ) {
   const deals = await prisma.deal.findMany({
     where: {
       workspaceId,
       ...(opts.query
         ? { name: { contains: opts.query, mode: "insensitive" } }
+        : {}),
+      ...(opts.stageName
+        ? { stage: { name: { equals: opts.stageName, mode: "insensitive" } } }
         : {}),
     },
     include: { stage: true, company: true },

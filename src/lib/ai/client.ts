@@ -1,35 +1,17 @@
+import Anthropic from "@anthropic-ai/sdk";
 import { matchEmailFixture } from "@/lib/ai/fixtureRegistry";
 import { resolveFixtureSentinels } from "@/lib/ai/sentinels";
-import type { AiProposalDraft } from "@/lib/proposals/types";
+import { runChatFixture, runChatLive } from "@/lib/ai/chat";
+import { aiEmailAnalysisResultSchema, type AiProposalDraft } from "@/lib/proposals/types";
+import type { AiMode, EmailAnalysisInput, EmailAnalysisResult, ChatInput, ChatResult } from "@/lib/ai/types";
 
-export type AiMode = "live" | "fixture";
+export type { AiMode, EmailAnalysisInput, EmailAnalysisResult, ChatInput, ChatResult };
 
 export function getAiMode(): AiMode {
   const mode = process.env.AI_MODE;
   if (mode === "live" && process.env.ANTHROPIC_API_KEY) return "live";
   return "fixture";
 }
-
-export type EmailAnalysisInput = {
-  kind: "email_analysis";
-  workspaceId: string;
-  email: { fromEmail: string; fromName?: string | null; subject: string; bodyText: string };
-};
-
-export type ChatInput = {
-  kind: "chat";
-  workspaceId: string;
-  message: string;
-  history: { role: "USER" | "ASSISTANT"; content: string }[];
-};
-
-export type EmailAnalysisResult = { kind: "email_analysis"; proposals: AiProposalDraft[] };
-export type ChatResult = {
-  kind: "chat";
-  content: string;
-  toolCalls: unknown[];
-  error?: boolean;
-};
 
 /**
  * Single call-site for all AI Feature calls (AIF-001/002/003). Fixture and live mode
@@ -45,7 +27,7 @@ export async function complete(
   if (input.kind === "email_analysis") {
     return mode === "fixture" ? completeEmailAnalysisFixture(input) : completeEmailAnalysisLive(input);
   }
-  return mode === "fixture" ? completeChatFixture(input) : completeChatLive(input);
+  return mode === "fixture" ? runChatFixture(input) : runChatLive(input);
 }
 
 async function completeEmailAnalysisFixture(input: EmailAnalysisInput): Promise<EmailAnalysisResult> {
@@ -63,23 +45,64 @@ async function completeEmailAnalysisFixture(input: EmailAnalysisInput): Promise<
   return { kind: "email_analysis", proposals: resolved };
 }
 
-async function completeChatFixture(_input: ChatInput): Promise<ChatResult> {
-  // AIF-002/003 are stubbed in this build phase: always the fixed fallback response.
-  // Phase 3 replaces this branch with fixtures/ai/chat.json pattern matching.
-  return {
-    kind: "chat",
-    content: "応答を生成できませんでした",
-    toolCalls: [],
-    error: true,
-  };
-}
+const EMAIL_ANALYSIS_TOOL = "return_proposals";
 
-async function completeEmailAnalysisLive(_input: EmailAnalysisInput): Promise<EmailAnalysisResult> {
-  throw new Error(
-    "AI_MODE=live is not implemented yet (Phase 3). Set AI_MODE=fixture or provide ANTHROPIC_API_KEY once the live path lands.",
-  );
-}
+/**
+ * AIF-001 live mode: single mid-tier call, structured output forced via tool_choice
+ * so the model must return `{proposals: [...]}` matching aiEmailAnalysisResultSchema
+ * (the same schema fixture mode's payloads are validated against elsewhere).
+ */
+async function completeEmailAnalysisLive(input: EmailAnalysisInput): Promise<EmailAnalysisResult> {
+  const client = new Anthropic();
+  const model = process.env.AI_MODEL_MID || "claude-sonnet-5";
 
-async function completeChatLive(_input: ChatInput): Promise<ChatResult> {
-  throw new Error("AI_MODE=live chat is not implemented yet (Phase 3).");
+  const response = await client.messages.create({
+    model,
+    max_tokens: 2048,
+    system:
+      "あなたはCRMのメール解析アシスタントです。メール本文からAI提案(AiProposal)を0件以上生成してください。" +
+      "判定ルール: 送信者emailが既存Contactに一致し既存Dealあり→FIELD_UPDATE/TASK系。未知の送信者+商談意図→NEW_DEAL(コンタクト・企業込み)。" +
+      "商談と無関係(ニュースレター等)→提案0件。" +
+      `return_proposals ツールで {proposals: [{type, confidence, payload}]} を返してください。`,
+    tools: [
+      {
+        name: EMAIL_ANALYSIS_TOOL,
+        description: "解析結果として0件以上のAI提案を返す",
+        input_schema: {
+          type: "object",
+          properties: {
+            proposals: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  type: {
+                    type: "string",
+                    enum: ["NEW_DEAL", "NEW_CONTACT", "FIELD_UPDATE", "DRAFT_EMAIL", "TASK"],
+                  },
+                  confidence: { type: "number" },
+                  payload: { type: "object" },
+                },
+                required: ["type", "confidence", "payload"],
+              },
+            },
+          },
+          required: ["proposals"],
+        },
+      },
+    ],
+    tool_choice: { type: "tool", name: EMAIL_ANALYSIS_TOOL },
+    messages: [
+      {
+        role: "user",
+        content: `送信元: ${input.email.fromName ?? ""} <${input.email.fromEmail}>\n件名: ${input.email.subject}\n本文:\n${input.email.bodyText}`,
+      },
+    ],
+  });
+
+  const toolUse = response.content.find((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
+  if (!toolUse) return { kind: "email_analysis", proposals: [] };
+
+  const parsed = aiEmailAnalysisResultSchema.parse(toolUse.input);
+  return { kind: "email_analysis", proposals: parsed.proposals as AiProposalDraft[] };
 }

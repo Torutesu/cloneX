@@ -71,7 +71,7 @@ export async function createProposal(
 export async function approveProposal(
   workspaceId: string,
   id: string,
-  userId: string,
+  userId: string | null,
   payloadOverride?: unknown,
 ) {
   const proposal = await prisma.aiProposal.findFirst({ where: { id, workspaceId } });
@@ -94,7 +94,7 @@ export async function approveProposal(
   });
 }
 
-export async function rejectProposal(workspaceId: string, id: string, userId: string) {
+export async function rejectProposal(workspaceId: string, id: string, userId: string | null) {
   const proposal = await prisma.aiProposal.findFirst({ where: { id, workspaceId } });
   if (!proposal) throw Errors.notFound("提案");
   if (proposal.status !== "PENDING") throw Errors.conflict("この提案はすでに処理済みです");

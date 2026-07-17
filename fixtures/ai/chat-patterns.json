@@ -1,29 +1,28 @@
 {
-  "_note": "Reserved for Phase 3 (AIF-002/003). In Phase 0-1, src/lib/ai/client.ts's chat branch always returns the fixed fallback response regardless of input (see completeChatFixture) — this file documents the normalized input -> response mapping AIF-002/003 will implement per 05-ai-features.md 'Fixtureモード', keyed by the exact E2E phrasing.",
+  "_note": "AIF-002/003 Fixtureモード (05-ai-features.md 'Fixtureモード'). src/lib/ai/chat.ts matches the exact, normalized (trimmed) user message against `input` below to pick a deterministic *response template* — but the tool execution itself is always real (deals_search runs against the live DB via src/lib/ai/tools.ts, and the followup draft's contactId/dealId are resolved from the live DB too). Only the AI's text/subject/body generation is fixture-templated; the search/resolution logic is production code exercised end-to-end. Unmatched input (including the reserved '__FORCE_ERROR__' sentinel used by E2E-018) returns the fixed fallback error response.",
   "patterns": [
     {
       "input": "10日以上動いていないディールを見せて",
       "intent": "query",
       "e2e_ref": "E2E-010",
-      "expected": {
-        "toolCalls": ["deals_search"],
-        "dealRefs": ["Delta社更新"]
-      }
+      "tool": "deals_search",
+      "args": { "stuckOnly": true },
+      "foundTemplate": "10日以上動きのないディールが{count}件見つかりました。",
+      "emptyTemplate": "10日以上動きのないディールは見つかりませんでした。期間やステージの条件を変えて聞いてみてください(例:「3日以上」「Negotiationステージで」)。"
     },
     {
       "input": "田中太郎さんにフォローアップして",
       "intent": "action",
       "e2e_ref": "E2E-011",
-      "expected": {
-        "toolCalls": ["draft_followup"],
-        "draft": { "contactName": "田中太郎", "dealName": "Acme社導入" }
-      }
+      "contactName": "田中太郎",
+      "subjectTemplate": "{dealName}の件でのご連絡",
+      "bodyTemplate": "{contactName}様\n\nいつもお世話になっております。\n{dealName}の進捗について確認させていただきたく、ご連絡いたしました。\nお手すきの際にご返信いただけますと幸いです。\n\nよろしくお願いいたします。",
+      "reason": "チャット指示によるフォローアップ草稿"
     },
     {
       "input": "__FORCE_ERROR__",
       "intent": "error",
-      "e2e_ref": "E2E-018",
-      "expected": { "error": true }
+      "e2e_ref": "E2E-018"
     }
   ]
 }
