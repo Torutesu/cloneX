@@ -1,0 +1,254 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime     @default(now())
+  aiEmployees  AiEmployee[]
+}
+
+model AiEmployee {
+  id          String         @id @default(cuid())
+  ownerId     String
+  owner       User           @relation(fields: [ownerId], references: [id])
+  name        String
+  productName String
+  productUrl  String
+  slug        String         @unique
+  status      EmployeeStatus @default(DRAFT)
+  brainStatus BrainStatus    @default(EMPTY)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  persona        Persona?
+  sources        Source[]
+  knowledgeNodes KnowledgeNode[]
+  knowledgeGaps  KnowledgeGap[]
+  scenarios      DemoScenario[]
+  sessions       Session[]
+  insightReports InsightReport[]
+}
+
+enum EmployeeStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum BrainStatus {
+  EMPTY
+  BUILDING
+  READY
+  FAILED
+}
+
+model Persona {
+  id           String       @id @default(cuid())
+  aiEmployeeId String       @unique
+  aiEmployee   AiEmployee   @relation(fields: [aiEmployeeId], references: [id], onDelete: Cascade)
+  displayName  String       @default("Sana")
+  avatarPreset AvatarPreset @default(CIRCLE_A)
+  accentColor  String       @default("#6C5CE7")
+  tone         Tone         @default(FRIENDLY)
+  languages    String[]     @default(["ja", "en", "zh", "es"])
+  greeting     Json
+}
+
+enum AvatarPreset {
+  CIRCLE_A
+  CIRCLE_B
+  ROBOT
+  SPARK
+}
+
+enum Tone {
+  FRIENDLY
+  PROFESSIONAL
+  ENERGETIC
+}
+
+model Source {
+  id             String          @id @default(cuid())
+  aiEmployeeId   String
+  aiEmployee     AiEmployee      @relation(fields: [aiEmployeeId], references: [id], onDelete: Cascade)
+  type           SourceType
+  name           String
+  content        String?         @db.Text
+  url            String?
+  status         SourceStatus    @default(PENDING)
+  createdAt      DateTime        @default(now())
+  knowledgeNodes KnowledgeNode[]
+}
+
+enum SourceType {
+  PRODUCT_URL
+  DOCUMENT
+  CALL_RECORDING
+  MARKETING
+}
+
+enum SourceStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model KnowledgeNode {
+  id           String         @id @default(cuid())
+  aiEmployeeId String
+  aiEmployee   AiEmployee     @relation(fields: [aiEmployeeId], references: [id], onDelete: Cascade)
+  kind         KnowledgeKind
+  title        String
+  body         String         @db.Text
+  sourceId     String?
+  source       Source?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  isEdited     Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  resolvedGaps KnowledgeGap[]
+}
+
+enum KnowledgeKind {
+  FEATURE
+  FAQ
+  OBJECTION
+  OTHER
+}
+
+model KnowledgeGap {
+  id             String         @id @default(cuid())
+  aiEmployeeId   String
+  aiEmployee     AiEmployee     @relation(fields: [aiEmployeeId], references: [id], onDelete: Cascade)
+  question       String
+  language       String
+  sessionId      String?
+  session        Session?       @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  status         GapStatus      @default(OPEN)
+  resolvedNodeId String?
+  resolvedNode   KnowledgeNode? @relation(fields: [resolvedNodeId], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+}
+
+enum GapStatus {
+  OPEN
+  RESOLVED
+}
+
+model DemoScenario {
+  id           String     @id @default(cuid())
+  aiEmployeeId String
+  aiEmployee   AiEmployee @relation(fields: [aiEmployeeId], references: [id], onDelete: Cascade)
+  title        String
+  isDefault    Boolean    @default(false)
+  steps        DemoStep[]
+  sessions     Session[]
+  createdAt    DateTime   @default(now())
+}
+
+model DemoStep {
+  id         String       @id @default(cuid())
+  scenarioId String
+  scenario   DemoScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  order      Int
+  title      String
+  route      String
+  selector   String?
+  narration  Json
+
+  @@unique([scenarioId, order])
+}
+
+model Session {
+  id               String        @id @default(cuid())
+  aiEmployeeId     String
+  aiEmployee       AiEmployee    @relation(fields: [aiEmployeeId], references: [id], onDelete: Cascade)
+  scenarioId       String?
+  scenario         DemoScenario? @relation(fields: [scenarioId], references: [id], onDelete: SetNull)
+  mode             SessionMode   @default(LIVE)
+  buyerName        String?
+  buyerCompany     String?
+  language         String        @default("ja")
+  status           SessionStatus @default(ACTIVE)
+  currentStepOrder Int           @default(0)
+  summary          String?       @db.Text
+  startedAt        DateTime      @default(now())
+  endedAt          DateTime?
+
+  turns         TranscriptTurn[]
+  events        SessionEvent[]
+  qualification Qualification?
+  gaps          KnowledgeGap[]
+}
+
+enum SessionMode {
+  LIVE
+  REHEARSAL
+}
+
+enum SessionStatus {
+  ACTIVE
+  ENDED
+}
+
+model TranscriptTurn {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      TurnRole
+  text      String   @db.Text
+  language  String
+  stepOrder Int?
+  meta      Json?
+  createdAt DateTime @default(now())
+}
+
+enum TurnRole {
+  BUYER
+  AI
+}
+
+model SessionEvent {
+  id        String           @id @default(cuid())
+  sessionId String
+  session   Session          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  type      SessionEventType
+  payload   Json
+  createdAt DateTime         @default(now())
+}
+
+enum SessionEventType {
+  SESSION_START
+  STEP_SHOWN
+  LANGUAGE_SWITCH
+  GAP_RECORDED
+  SESSION_END
+}
+
+model Qualification {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  useCase   String?
+  teamSize  String?
+  timeline  String?
+  interest  Int?
+  summary   String   @db.Text
+  createdAt DateTime @default(now())
+}
+
+model InsightReport {
+  id           String     @id @default(cuid())
+  aiEmployeeId String
+  aiEmployee   AiEmployee @relation(fields: [aiEmployeeId], references: [id], onDelete: Cascade)
+  payload      Json
+  generatedAt  DateTime   @default(now())
+}
