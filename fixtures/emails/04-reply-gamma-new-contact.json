@@ -1,0 +1,22 @@
+{
+  "id": "seed-04-reply-gamma-new-contact",
+  "fromEmail": "hanako@gamma.example",
+  "fromName": "鈴木花子",
+  "subject": "Re: Gamma社導入 - 決裁者のご紹介",
+  "bodyText": "鈴木です。本件、最終的な決裁者である山田をCCに入れました。山田(yamada@gamma.example)が今後窓口になりますので、よろしくお願いします。",
+  "sentAt": "2026-07-13T04:15:00.000Z",
+  "expectedProposals": [
+    {
+      "type": "NEW_CONTACT",
+      "confidence": 0.8,
+      "payload": {
+        "name": "山田健太",
+        "email": "yamada@gamma.example",
+        "title": "決裁者",
+        "companyName": "Gamma Inc",
+        "dealId": "$dealByName:Gamma社導入",
+        "reason": "メール本文で決裁者として紹介されたため、新規コンタクトとして検出しました。"
+      }
+    }
+  ]
+}

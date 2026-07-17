@@ -1,0 +1,25 @@
+{
+  "id": "manual-07-order-confirmed-high",
+  "fromEmail": "kounyuu@shindeal.example",
+  "fromName": "新規太郎",
+  "subject": "発注確定の件",
+  "bodyText": "お世話になっております。ShinDeal社の新規です。稟議が正式に承認されましたので、正式に発注します。契約書をお送りください。よろしくお願いいたします。",
+  "sentAt": "2026-07-16T06:00:00.000Z",
+  "expectedProposals": [
+    {
+      "type": "NEW_DEAL",
+      "confidence": 0.95,
+      "payload": {
+        "name": "ShinDeal社導入",
+        "companyName": "ShinDeal Inc",
+        "companyDomain": "shindeal.example",
+        "contacts": [
+          { "name": "新規太郎", "email": "kounyuu@shindeal.example", "title": "購買担当", "role": "champion" }
+        ],
+        "stageName": "Proposal",
+        "taskTitle": "契約書を送付する",
+        "reason": "「正式に発注します」との明確な意思表示があり、高い確信度で新規ディールとして検出しました。"
+      }
+    }
+  ]
+}

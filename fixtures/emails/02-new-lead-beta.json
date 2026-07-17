@@ -1,0 +1,25 @@
+{
+  "id": "seed-02-new-lead-beta",
+  "fromEmail": "kobayashi@beta.example",
+  "fromName": "小林あかり",
+  "subject": "Beta社トライアルについて",
+  "bodyText": "Beta社の小林と申します。展示会で貴社のサービスに興味を持ちました。まずはトライアルで使わせていただくことは可能でしょうか。社内の担当者数名で試したいと考えています。",
+  "sentAt": "2026-07-15T02:30:00.000Z",
+  "expectedProposals": [
+    {
+      "type": "NEW_DEAL",
+      "confidence": 0.85,
+      "payload": {
+        "name": "Beta社トライアル",
+        "companyName": "Beta",
+        "companyDomain": "beta.example",
+        "contacts": [
+          { "name": "小林あかり", "email": "kobayashi@beta.example", "title": "担当者", "role": "champion" }
+        ],
+        "stageName": "Lead",
+        "taskTitle": "トライアル環境を用意する",
+        "reason": "トライアル利用の申し出があり、新規の商談機会として検出しました。"
+      }
+    }
+  ]
+}

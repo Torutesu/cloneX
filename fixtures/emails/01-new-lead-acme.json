@@ -1,0 +1,27 @@
+{
+  "id": "seed-01-new-lead-acme",
+  "fromEmail": "yamamoto@acme.example",
+  "fromName": "山本次郎",
+  "subject": "Acme社との商談について",
+  "bodyText": "はじめまして、Acme社購買部の山本と申します。貴社製品の導入を検討しております。まずは見積もりを送ってください。予算感は1万2千ドル程度を想定しています。",
+  "sentAt": "2026-07-15T01:00:00.000Z",
+  "expectedProposals": [
+    {
+      "type": "NEW_DEAL",
+      "confidence": 0.92,
+      "payload": {
+        "name": "Acme社との商談",
+        "amount": 12000,
+        "currency": "USD",
+        "companyName": "Acme",
+        "companyDomain": "acme.example",
+        "contacts": [
+          { "name": "山本次郎", "email": "yamamoto@acme.example", "title": "購買部", "role": "champion" }
+        ],
+        "stageName": "Lead",
+        "taskTitle": "見積もりを送付する",
+        "reason": "見積もりを送ってくださいとの記載があり、新規の商談機会として検出しました。"
+      }
+    }
+  ]
+}

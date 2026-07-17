@@ -1,0 +1,24 @@
+{
+  "id": "manual-08-order-confirmed-mid",
+  "fromEmail": "tanto@kentocorp.example",
+  "fromName": "検討花子",
+  "subject": "発注確定の件",
+  "bodyText": "Kento Corpの検討です。社内では発注できるかもしれないという方向で話は進んでいますが、まだ最終決裁が下りていません。来月には結論が出る見込みです。",
+  "sentAt": "2026-07-16T07:00:00.000Z",
+  "expectedProposals": [
+    {
+      "type": "NEW_DEAL",
+      "confidence": 0.8,
+      "payload": {
+        "name": "Kento Corp導入",
+        "companyName": "Kento Corp",
+        "companyDomain": "kentocorp.example",
+        "contacts": [
+          { "name": "検討花子", "email": "tanto@kentocorp.example", "title": "担当者", "role": "influencer" }
+        ],
+        "stageName": "Lead",
+        "reason": "発注を検討中との記載だが、まだ最終決裁前であり確定的ではないため中程度の確信度としました。"
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "seed-03-reply-acme-task",
+  "fromEmail": "taro@acme.example",
+  "fromName": "田中太郎",
+  "subject": "見積もりの件、ご回答します",
+  "bodyText": "田中です。いただいた見積もりについて、来週月曜までに社内稟議の回答をお送りします。念のためリマインドをお願いできますか。",
+  "sentAt": "2026-07-14T05:00:00.000Z",
+  "expectedProposals": [
+    {
+      "type": "TASK",
+      "confidence": 0.85,
+      "payload": {
+        "dealId": "$dealByName:Acme社導入",
+        "title": "田中様に稟議結果のリマインドを送る",
+        "dueAt": "2026-07-21T09:00:00.000Z",
+        "reason": "来週月曜までに回答予定とのことで、フォローアップのリマインドタスクを提案します。"
+      }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "_note": "Reserved for Phase 3 (AIF-002/003). In Phase 0-1, src/lib/ai/client.ts's chat branch always returns the fixed fallback response regardless of input (see completeChatFixture) — this file documents the normalized input -> response mapping AIF-002/003 will implement per 05-ai-features.md 'Fixtureモード', keyed by the exact E2E phrasing.",
+  "patterns": [
+    {
+      "input": "10日以上動いていないディールを見せて",
+      "intent": "query",
+      "e2e_ref": "E2E-010",
+      "expected": {
+        "toolCalls": ["deals_search"],
+        "dealRefs": ["Delta社更新"]
+      }
+    },
+    {
+      "input": "田中太郎さんにフォローアップして",
+      "intent": "action",
+      "e2e_ref": "E2E-011",
+      "expected": {
+        "toolCalls": ["draft_followup"],
+        "draft": { "contactName": "田中太郎", "dealName": "Acme社導入" }
+      }
+    },
+    {
+      "input": "__FORCE_ERROR__",
+      "intent": "error",
+      "e2e_ref": "E2E-018",
+      "expected": { "error": true }
+    }
+  ]
+}

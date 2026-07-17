@@ -1,0 +1,21 @@
+{
+  "id": "seed-05-amount-mention-acme",
+  "fromEmail": "taro@acme.example",
+  "fromName": "田中太郎",
+  "subject": "Acme社導入 予算確定のご連絡",
+  "bodyText": "田中です。社内稟議が通りました。予算は2万ドルで確定です。当初のお見積りから追加オプションを含めた金額になります。契約書のご準備をお願いします。",
+  "sentAt": "2026-07-16T03:00:00.000Z",
+  "expectedProposals": [
+    {
+      "type": "FIELD_UPDATE",
+      "confidence": 0.88,
+      "payload": {
+        "dealId": "$dealByName:Acme社導入",
+        "field": "amount",
+        "oldValue": "12000",
+        "newValue": "20000",
+        "reason": "「予算は2万ドルで確定です」との記載があり、金額の更新を検出しました。"
+      }
+    }
+  ]
+}

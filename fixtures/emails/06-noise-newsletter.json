@@ -1,0 +1,9 @@
+{
+  "id": "seed-06-noise-newsletter",
+  "fromEmail": "newsletter@salesnews.example",
+  "fromName": "SalesNews Weekly",
+  "subject": "今週のセールスTips 5選【SalesNews】",
+  "bodyText": "今週も購読いただきありがとうございます。今回は「商談化率を上げる5つのコツ」を特集しています。詳しくはブログをご覧ください。配信停止はこちら。",
+  "sentAt": "2026-07-12T00:00:00.000Z",
+  "expectedProposals": []
+}
