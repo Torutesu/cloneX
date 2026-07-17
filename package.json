@@ -1,0 +1,39 @@
+{
+  "name": "clonex",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "db:setup": "prisma db push && prisma db seed",
+    "test:e2e": "playwright test"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "next": "15.5.20",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "@prisma/client": "6.19.3",
+    "bcryptjs": "2.4.3",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "22.10.5",
+    "@types/react": "19.1.0",
+    "@types/react-dom": "19.1.0",
+    "@types/bcryptjs": "2.4.6",
+    "tailwindcss": "4.3.3",
+    "@tailwindcss/postcss": "4.3.3",
+    "postcss": "8.4.49",
+    "prisma": "6.19.3",
+    "tsx": "4.19.2",
+    "eslint": "9.18.0",
+    "eslint-config-next": "15.5.20",
+    "@playwright/test": "1.61.1"
+  }
+}
