@@ -50,3 +50,25 @@ pnpm test:e2e   # playwright test — resets the DB and starts its own dev serve
 5. デプロイ完了後、`https://<project>.vercel.app/login` に `demo@clonex.dev / demo1234` でログイン
 
 注意: `AI_MODE=fixture` はfixtureメール6通+チャット定型2パターンのデモが動く。実AIで試すには `live` + APIキー。
+
+## Cloudflare で確認テスト用URLを出す(最速: Quick Tunnel)
+
+ローカルでアプリを起動し、Cloudflare Quick Tunnel で即席の公開URLを作る方法。
+**Cloudflareアカウント不要・無料**。スマホからそのまま開けます。
+
+```bash
+# 1. アプリをローカル起動(要 PostgreSQL)
+pnpm install && pnpm db:setup && pnpm dev   # http://localhost:3000
+
+# 2. 別ターミナルで cloudflared を入れてトンネルを張る
+brew install cloudflared        # macOS(Windows: winget install Cloudflare.cloudflared)
+cloudflared tunnel --url http://localhost:3000
+```
+
+出力される `https://<ランダム>.trycloudflare.com` がそのまま公開URL。
+スマホで開いて `demo@clonex.dev / demo1234` でログインすれば確認テストができます。
+
+注意:
+- Quick Tunnel はターミナルを閉じると消える一時URL(確認テスト用途向け)
+- 常設したい場合は Cloudflare Zero Trust の Named Tunnel か、
+  Workers への本番デプロイ(要 OpenNext アダプタ対応 — 未実施)を使う
