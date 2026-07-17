@@ -67,3 +67,13 @@ makes it correct under any future multi-instance deployment, not just Next dev.
   drive via curl (see final build report). `CLAUDE.md` documents the full
   `data-testid` contract the E2E suite already assumes so Phase 2 can build directly
   against it.
+
+## Phase 2 レビュー時の修正(オーケストレータ)
+
+- contactService.createContact のレスポンスに `include: { company: true }` を追加。
+  一覧画面の楽観的追加行で企業名が「-」になる問題の修正(E2E-008)
+- 企業一覧の行全体をクリック可能に(`onClick` で詳細へ遷移)。テストは行クリックで
+  遷移する想定だった(E2E-009)
+- E2E-012 の Given をスペック記載どおり「E2E-004の続きでよい」に合わせ、
+  提案が既に承認済みの場合はスキップして進む形に修正(実行順序非依存化。
+  アサーションは変更なし)

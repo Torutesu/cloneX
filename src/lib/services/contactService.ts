@@ -63,6 +63,7 @@ export async function createContact(
       title: data.title ?? null,
       companyId,
     },
+    include: { company: true },
   });
 }
 

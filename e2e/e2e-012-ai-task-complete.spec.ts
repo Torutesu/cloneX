@@ -7,10 +7,14 @@ test("completing an AI-generated task records it on the deal timeline", async ({
   await loginAsDemoUser(page);
   await syncMailboxFromSettings(page);
 
+  // Given(spec: E2E-004の続きでよい): 提案が未承認ならここで承認し、
+  // フルスイートで既にE2E-004が承認済みの場合はそのまま進む。
   await page.goto("/app/review");
   const card = page.locator('[data-testid^="proposal-card-"]', { hasText: "Acme社との商談" });
-  await card.locator('[data-testid^="approve-"]').click();
-  await expect(card).not.toBeVisible();
+  if ((await card.count()) > 0) {
+    await card.locator('[data-testid^="approve-"]').click();
+    await expect(card).not.toBeVisible();
+  }
 
   await page.goto("/app/tasks");
   const taskRow = page.locator('[data-testid^="task-row-"]', { hasText: "見積もりを送付する" });

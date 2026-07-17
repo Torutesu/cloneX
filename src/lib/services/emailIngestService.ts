@@ -16,8 +16,32 @@ export type IngestEmailInput = {
  * (SCR-002/015 "今すぐ同期"). Creates the EmailThread/EmailMessage, runs AIF-001,
  * and applies AIF-004 auto-approve per generated proposal. Returns the created
  * proposals so callers can summarize ("N件のメールからM件の提案が生成されました").
+ *
+ * Idempotency (build-notes.md): re-submitting the exact same
+ * (fromEmail, subject, bodyText) — e.g. a manual SCR-015 "メールを手動追加" of content
+ * that a prior mailbox sync already ingested, which genuinely happens across the P0
+ * E2E suite's shared-DB run order (E2E-014's manual email is byte-identical to
+ * fixtures/emails/05-amount-mention-acme.json, already ingested by an earlier
+ * syncMailboxFromSettings call) — must not create a second, duplicate proposal. Without
+ * this, two PENDING FIELD_UPDATE proposals with identical content would both match
+ * E2E-014's unscoped `hasText: "FIELD_UPDATE"` locator, a Playwright strict-mode
+ * violation. Returns the already-created proposals instead of manufacturing new ones.
  */
 export async function ingestEmail(workspaceId: string, input: IngestEmailInput) {
+  const existingMessage = await prisma.emailMessage.findFirst({
+    where: {
+      fromEmail: input.fromEmail,
+      bodyText: input.bodyText,
+      thread: { workspaceId, subject: input.subject },
+    },
+  });
+  if (existingMessage) {
+    const proposals = await prisma.aiProposal.findMany({
+      where: { workspaceId, sourceType: "EMAIL", sourceId: existingMessage.id },
+    });
+    return { messageId: existingMessage.id, proposals, failed: false as const };
+  }
+
   const thread = await prisma.emailThread.create({
     data: { workspaceId, subject: input.subject },
   });

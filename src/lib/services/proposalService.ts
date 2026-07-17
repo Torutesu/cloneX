@@ -15,11 +15,32 @@ export async function listProposals(
   if (opts.countOnly) {
     return { count: await prisma.aiProposal.count({ where }) };
   }
-  const proposals = await prisma.aiProposal.findMany({
+  const rawProposals = await prisma.aiProposal.findMany({
     where,
     orderBy: { createdAt: "desc" },
     take: 100,
   });
+
+  // SCR-010 "sourceの原文をアコーディオン展開(EmailMessage.bodyText)" needs the raw
+  // email body, which AiProposal doesn't store (only `sourceId` pointing at it).
+  // Batch-fetch and attach as `sourceEmail` — additive field, no schema/API contract
+  // change (see build-notes.md).
+  const emailIds = rawProposals.filter((p) => p.sourceType === "EMAIL" && p.sourceId).map((p) => p.sourceId as string);
+  const emailById = emailIds.length
+    ? new Map(
+        (await prisma.emailMessage.findMany({ where: { id: { in: emailIds } } })).map((e) => [e.id, e]),
+      )
+    : new Map();
+  const proposals = rawProposals.map((p) => ({
+    ...p,
+    sourceEmail:
+      p.sourceType === "EMAIL" && p.sourceId
+        ? (() => {
+            const email = emailById.get(p.sourceId as string);
+            return email ? { fromEmail: email.fromEmail, fromName: email.fromName, bodyText: email.bodyText } : null;
+          })()
+        : null,
+  }));
   return { proposals };
 }
 

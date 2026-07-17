@@ -72,12 +72,28 @@ export async function getDealById(workspaceId: string, id: string) {
     },
   });
   if (!deal) throw Errors.notFound("ディール");
-  const [activities, tasks, notes, pendingProposalCount] = await Promise.all([
+  const [rawActivities, tasks, notes, pendingProposalCount] = await Promise.all([
     prisma.activity.findMany({ where: { workspaceId, dealId: id }, orderBy: { occurredAt: "desc" } }),
     prisma.task.findMany({ where: { workspaceId, dealId: id }, orderBy: { dueAt: "asc" } }),
     prisma.note.findMany({ where: { workspaceId, dealId: id }, orderBy: { createdAt: "desc" } }),
     prisma.aiProposal.count({ where: { workspaceId, dealId: id, status: "PENDING" } }),
   ]);
+
+  // SCR-006 Timeline "EMAILはクリックで本文展開(EmailMessage)" needs the original
+  // message body, which Activity doesn't store (only a one-line `summary`). Batch
+  // fetch the referenced EmailMessage rows and attach as `emailBody` — additive
+  // field, no schema/API contract change (see build-notes.md).
+  const emailRefIds = rawActivities.filter((a) => a.type === "EMAIL" && a.refId).map((a) => a.refId as string);
+  const emailById = emailRefIds.length
+    ? new Map(
+        (await prisma.emailMessage.findMany({ where: { id: { in: emailRefIds } } })).map((e) => [e.id, e]),
+      )
+    : new Map();
+  const activities = rawActivities.map((a) => ({
+    ...a,
+    emailBody: a.type === "EMAIL" && a.refId ? (emailById.get(a.refId)?.bodyText ?? null) : null,
+  }));
+
   return { deal, stage: deal.stage, company: deal.company, contacts: deal.contacts, activities, tasks, notes, pendingProposalCount };
 }
 
